@@ -32,7 +32,7 @@ func registerRoutes() {
 	g.GET("/token/verify", c.VerifyToken)
 	g.POST("/password/forgot", c.ForgotPassword)
 	g.POST("/password/forgot/otp/resend", c.ResendForgotPasswordOtp)
-	g.POST("/password/verifyreset", c.VerifyResetPassword)
+	g.POST("/password/verify-reset", c.VerifyResetPassword)
 	g.POST("/password/reset", c.ResetPassword)
 
 	// Authenticated Routes

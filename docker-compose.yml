@@ -1,0 +1,55 @@
+version: "3.9"
+services:
+  auth_server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: hink-auth
+    stdin_open: true
+    image: hink-auth
+    volumes:
+      - .:/usr/src/app
+    environment:
+      - CONSUL_ENDPOINT=consul:8500
+      - CONSUL_PATH=config
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 8080:8080
+    depends_on:
+      - mysql
+      - redis
+    links:
+      - mysql
+      - redis
+
+  mysql:
+    container_name: mysql
+    image: mysql
+    env_file:
+      - .env
+    restart: unless-stopped
+    tty: true
+    hostname: mysql
+    stdin_open: true
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis
+    container_name: redis
+    hostname: redis
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - 6379:6379
+    command: redis-server
+    volumes:
+      - cache_data:/data
+
+volumes:
+  mysql_data:
+  cache_data:

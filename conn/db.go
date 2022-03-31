@@ -50,6 +50,10 @@ func ConnectDb() {
 
 	db = dB
 
+	// db.AutoMigrate(
+	// 	&models.User{},
+	// )
+
 	log.Info("mysql connection successful...")
 }
 
