@@ -25,14 +25,13 @@ type LoggedInUser struct {
 }
 
 type UserResp struct {
-	ID            int     `json:"id"`
-	FirstName     string  `json:"first_name"`
-	LastName      string  `json:"last_name"`
-	Email         string  `json:"email"`
-	Phone         *string `json:"phone"`
-	ProfilePic    *string `json:"profile_pic"`
-	Verified      bool    `json:"verified"`
-	LoginProvider string  `json:"login_provider"`
+	ID         int     `json:"id"`
+	FirstName  string  `json:"first_name"`
+	LastName   string  `json:"last_name"`
+	Email      string  `json:"email"`
+	Phone      *string `json:"phone"`
+	ProfilePic *string `json:"profile_pic"`
+	Verified   bool    `json:"verified"`
 }
 
 func (u *UserResp) Cache() {
@@ -146,14 +145,6 @@ func (u *UserCreateUpdateReq) isPasswordRequired() bool {
 	}
 
 	return true
-}
-
-type UserUpdateResponse struct {
-	ID         int     `json:"id"`
-	FirstName  *string `json:"first_name"`
-	LastName   *string `json:"last_name"`
-	Phone      string  `json:"phone"`
-	ProfilePic *string `json:"profile_pic"`
 }
 
 type FbTokenInfo struct {

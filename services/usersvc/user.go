@@ -23,40 +23,51 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateUser(userData *types.UserCreateUpdateReq) (*models.User, error) {
-	existingUser, err := GetUserByEmail(userData.Email)
+func CreateUser(userData *types.UserCreateUpdateReq) error {
+	_, err := GetUserByEmail(userData.Email)
 
+	// check user exists or not
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return nil, err
+		return err
 	}
 
-	// if user exists and verified
-	if err == nil && existingUser.Verified {
-		return nil, errutil.ErrUserAlreadyRegistered
+	// if user exists
+	if err == nil {
+		return errutil.ErrUserAlreadyRegistered
 	}
 
 	// if user doesn't exist
-	user := getUserModel(userData, true)
+	user, err := getUserModel(userData)
+	if err != nil {
+		log.Error(err)
+		return errutil.ErrUserUpdate
+	}
+
 	if userData.LoginProvider == consts.LoginProviderHink {
 		*user.Password = encryptPassword(*userData.Password)
 	}
 
 	if err := conn.Db().Create(&user).Error; err != nil {
 		log.Error(err)
-		return nil, errutil.ErrUserCreate
+		return errutil.ErrUserCreate
 	}
 
-	return user, nil
+	return nil
 }
 
 func UpdateUser(userData *types.UserCreateUpdateReq) error {
-	user := getUserModel(userData, false)
+	user, err := getUserModel(userData)
+	if err != nil {
+		log.Error(err)
+		return errutil.ErrUserUpdate
+	}
 
-	err := conn.Db().Model(&models.User{}).
+	err = conn.Db().Model(&models.User{}).
 		Where("id = ?", user.ID).
-		Omit("email", "password").
+		Omit("email", "password", "login_provider").
 		Updates(&user).
 		Error
+
 	if err != nil {
 		log.Error(err)
 		return errutil.ErrUserUpdate
@@ -279,13 +290,12 @@ func ResetPassword(req *types.ResetPasswordReq) error {
 }
 
 func CreateUserForSocialLogin(userData *types.SocialLoginResp) (*models.User, error) {
-	user := &models.User{
-		Email:         userData.Email,
-		FirstName:     userData.FirstName,
-		LastName:      userData.LastName,
-		LoginProvider: userData.LoginProvider,
-		Verified:      true,
+	user := &models.User{}
+	respErr := methodutil.CopyStruct(userData, &user)
+	if respErr != nil {
+		return nil, respErr
 	}
+	user.Verified = true
 
 	if err := conn.Db().Create(&user).Error; err != nil {
 		log.Error(err)
@@ -304,27 +314,13 @@ func passwordResetSecret(user *models.User) string {
 	return *user.Password + strconv.Itoa(int(user.CreatedAt.Unix()))
 }
 
-func getUserModel(userData *types.UserCreateUpdateReq, newUser bool) *models.User {
+func getUserModel(userData *types.UserCreateUpdateReq) (*models.User, error) {
 	user := &models.User{}
-
-	switch newUser {
-	case true:
-		user.Email = userData.Email
-		user.Phone = userData.Phone
-		user.LoginProvider = userData.LoginProvider
-
-		if userData.LoginProvider == consts.LoginProviderHink {
-			user.Password = userData.Password
-		}
-	case false:
-		user.ID = userData.ID
+	respErr := methodutil.CopyStruct(userData, &user)
+	if respErr != nil {
+		return nil, respErr
 	}
-
-	user.FirstName = userData.FirstName
-	user.LastName = userData.LastName
-	user.ProfilePic = userData.ProfilePic
-
-	return user
+	return user, nil
 }
 
 func createForgotPasswordOtp(userId int, email string) (*types.ForgotPasswordOtpResp, error) {

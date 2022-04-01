@@ -29,7 +29,7 @@ func Signup(c echo.Context) error {
 		})
 	}
 
-	user, err := usersvc.CreateUser(req)
+	err = usersvc.CreateUser(req)
 	if err != nil {
 		switch err {
 		case errutil.ErrUserAlreadyRegistered:
@@ -39,7 +39,7 @@ func Signup(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusCreated, user)
+	return c.NoContent(http.StatusCreated)
 }
 
 func Login(c echo.Context) error {
@@ -94,7 +94,7 @@ func Logout(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, msgutil.LogoutFailedMsg())
 	}
 
-	return c.JSON(http.StatusOK, msgutil.LogoutSuccessMsg())
+	return c.NoContent(http.StatusOK)
 }
 
 func SocialLogin(c echo.Context) error {

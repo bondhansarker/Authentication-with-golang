@@ -330,9 +330,9 @@ func processGoogleLogin(token string) (*types.SocialLoginResp, error) {
 	user, err := usersvc.GetUserByEmail(googleUser.Email)
 
 	if err != nil && err == gorm.ErrRecordNotFound {
-		resp.FirstName = googleUser.FirstName
-		resp.LastName = googleUser.LastName
-		resp.Email = googleUser.Email
+		if respErr := methodutil.CopyStruct(googleUser, &resp); respErr != nil {
+			return nil, respErr
+		}
 		resp.LoginProvider = consts.LoginProviderGoogle
 		user, err = usersvc.CreateUserForSocialLogin(resp)
 		if err != nil {
@@ -349,23 +349,21 @@ func processGoogleLogin(token string) (*types.SocialLoginResp, error) {
 		return nil, err
 	}
 
-	resp.AccessToken = loginResp.AccessToken
-	resp.RefreshToken = loginResp.RefreshToken
-	resp.User = loginResp.User
-
+	respErr := methodutil.CopyStruct(loginResp, &resp)
+	if respErr != nil {
+		return nil, respErr
+	}
 	return resp, nil
 }
 
 func isValidGoogleIdToken(idToken string) bool {
 	google, err := oauth2.NewService(context.Background(), option.WithAPIKey(config.App().GoogleApiKey))
-
 	if err != nil {
 		log.Error(err)
 		return false
 	}
 
-	_, err = google.Tokeninfo().IdToken(idToken).Do()
-	if err != nil {
+	if _, err := google.Tokeninfo().IdToken(idToken).Do(); err != nil {
 		log.Error(err)
 		return false
 	}
@@ -398,9 +396,9 @@ func processFacebookLogin(token string) (*types.SocialLoginResp, error) {
 	user, err := usersvc.GetUserByEmail(fbUser.Email)
 
 	if err != nil && err == gorm.ErrRecordNotFound {
-		resp.FirstName = fbUser.FirstName
-		resp.LastName = fbUser.LastName
-		resp.Email = fbUser.Email
+		if respErr := methodutil.CopyStruct(fbUser, &resp); respErr != nil {
+			return nil, respErr
+		}
 		resp.LoginProvider = consts.LoginProviderFacebook
 		user, err = usersvc.CreateUserForSocialLogin(resp)
 		if err != nil {
@@ -417,9 +415,10 @@ func processFacebookLogin(token string) (*types.SocialLoginResp, error) {
 		return nil, err
 	}
 
-	resp.AccessToken = loginResp.AccessToken
-	resp.RefreshToken = loginResp.RefreshToken
-	resp.User = loginResp.User
+	respErr := methodutil.CopyStruct(loginResp, &resp)
+	if respErr != nil {
+		return nil, respErr
+	}
 
 	return resp, nil
 }
@@ -523,9 +522,9 @@ func isValidAppleIdToken(idToken string) bool {
 		return false
 	}
 
-	//if tokenInfo.ExpiresAt <= time.Now().Unix() {
+	// if tokenInfo.ExpiresAt <= time.Now().Unix() {
 	//	return false
-	//}
+	// }
 
 	keys, err := applekeyutil.GetApplePublicKeys(conf.ApplePublicKeyUrl, conf.ApplePublicKeyTimeout)
 	if err != nil {

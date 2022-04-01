@@ -62,7 +62,7 @@ func UpdateUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
 	}
 
-	return c.JSON(http.StatusOK, msgutil.EntityUpdateSuccessMsg("User"))
+	return c.NoContent(http.StatusOK)
 }
 
 func ChangePassword(c echo.Context) error {
@@ -98,7 +98,7 @@ func ChangePassword(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, msgutil.ChangePasswordSuccessMsg())
+	return c.NoContent(http.StatusOK)
 }
 
 func ForgotPassword(c echo.Context) error {
@@ -156,7 +156,7 @@ func VerifyResetPassword(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, msgutil.VerifyResetPasswordMsg())
+	return c.NoContent(http.StatusOK)
 }
 
 func ResendForgotPasswordOtp(c echo.Context) error {
@@ -223,5 +223,5 @@ func ResetPassword(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
 	}
 
-	return c.JSON(http.StatusOK, msgutil.PasswordResetSuccessMsg())
+	return c.NoContent(http.StatusOK)
 }

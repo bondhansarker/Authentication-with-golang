@@ -23,6 +23,14 @@ func MapToStruct(input map[string]interface{}, output interface{}) error {
 	}
 }
 
+func CopyStruct(input interface{}, output interface{}) error {
+	if b, err := json.Marshal(input); err == nil {
+		return json.Unmarshal(b, &output)
+	} else {
+		return err
+	}
+}
+
 func InArray(needle interface{}, haystack interface{}) bool {
 	switch reflect.TypeOf(haystack).Kind() {
 	case reflect.Slice:
