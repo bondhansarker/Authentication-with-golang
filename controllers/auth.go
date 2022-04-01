@@ -52,6 +52,12 @@ func Login(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
 	}
 
+	if err = cred.Validate(); err != nil {
+		return c.JSON(http.StatusBadRequest, &types.ValidationError{
+			Error: err,
+		})
+	}
+
 	if res, err = authsvc.Login(cred); err != nil {
 		switch err {
 		case errutil.ErrInvalidEmail, errutil.ErrInvalidPassword:

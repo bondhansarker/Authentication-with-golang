@@ -15,6 +15,13 @@ type LoginReq struct {
 	Password string `json:"password"`
 }
 
+func (u LoginReq) Validate() error {
+	return v.ValidateStruct(&u,
+		v.Field(&u.Email, v.Required, is.EmailFormat),
+		v.Field(&u.Password, v.Required),
+	)
+}
+
 type TokenRefreshReq struct {
 	RefreshToken string `json:"refresh_token"`
 }

@@ -381,9 +381,6 @@ func googleUserInfo(idToken string) (*types.GoogleTokenInfo, error) {
 	}
 
 	if tokenInfo, ok := token.Claims.(*types.GoogleTokenInfo); ok {
-		fmt.Println("============================================================")
-		log.Info(tokenInfo.Name, tokenInfo.FirstName)
-		fmt.Println("============================================================")
 		return tokenInfo, nil
 	}
 
