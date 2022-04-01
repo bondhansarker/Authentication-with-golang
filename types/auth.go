@@ -144,18 +144,12 @@ func (s *SocialLoginReq) loginProviderValid(value interface{}) error {
 }
 
 type SocialLoginResp struct {
-	Registered bool `json:"registered"`
-
-	// after login
 	AccessToken  string    `json:"access_token,omitempty"`
 	RefreshToken string    `json:"refresh_token,omitempty"`
 	User         *UserResp `json:"user,omitempty"`
 
-	// for signup
-	FirstName     string `json:"first_name,omitempty"`
-	LastName      string `json:"last_name,omitempty"`
-	Email         string `json:"email,omitempty"`
-	Phone         string `json:"phone,omitempty"`
-	ProfilePic    string `json:"profile_pic,omitempty"`
-	LoginProvider string `json:"login_provider,omitempty"`
+	FirstName     *string `json:"first_name,omitempty"`
+	LastName      *string `json:"last_name,omitempty"`
+	Email         string  `json:"email,omitempty"`
+	LoginProvider string  `json:"login_provider,omitempty"`
 }

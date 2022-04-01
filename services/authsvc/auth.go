@@ -328,18 +328,16 @@ func processGoogleLogin(token string) (*types.SocialLoginResp, error) {
 	}
 
 	user, err := usersvc.GetUserByEmail(googleUser.Email)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			resp.Registered = false
-			resp.FirstName = googleUser.FirstName
-			resp.LastName = googleUser.LastName
-			resp.Email = googleUser.Email
-			resp.LoginProvider = consts.LoginProviderGoogle
 
-			return resp, nil
+	if err != nil && err == gorm.ErrRecordNotFound {
+		resp.FirstName = googleUser.FirstName
+		resp.LastName = googleUser.LastName
+		resp.Email = googleUser.Email
+		resp.LoginProvider = consts.LoginProviderGoogle
+		user, err = usersvc.CreateUserForSocialLogin(resp)
+		if err != nil {
+			return nil, err
 		}
-
-		return nil, err
 	}
 
 	if user.LoginProvider != consts.LoginProviderGoogle {
@@ -351,7 +349,6 @@ func processGoogleLogin(token string) (*types.SocialLoginResp, error) {
 		return nil, err
 	}
 
-	resp.Registered = true
 	resp.AccessToken = loginResp.AccessToken
 	resp.RefreshToken = loginResp.RefreshToken
 	resp.User = loginResp.User
@@ -384,6 +381,9 @@ func googleUserInfo(idToken string) (*types.GoogleTokenInfo, error) {
 	}
 
 	if tokenInfo, ok := token.Claims.(*types.GoogleTokenInfo); ok {
+		fmt.Println("============================================================")
+		log.Info(tokenInfo.Name, tokenInfo.FirstName)
+		fmt.Println("============================================================")
 		return tokenInfo, nil
 	}
 
@@ -399,18 +399,16 @@ func processFacebookLogin(token string) (*types.SocialLoginResp, error) {
 	}
 
 	user, err := usersvc.GetUserByEmail(fbUser.Email)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			resp.Registered = false
-			resp.FirstName = fbUser.FirstName
-			resp.LastName = fbUser.LastName
-			resp.Email = fbUser.Email
-			resp.LoginProvider = consts.LoginProviderFacebook
 
-			return resp, nil
+	if err != nil && err == gorm.ErrRecordNotFound {
+		resp.FirstName = fbUser.FirstName
+		resp.LastName = fbUser.LastName
+		resp.Email = fbUser.Email
+		resp.LoginProvider = consts.LoginProviderFacebook
+		user, err = usersvc.CreateUserForSocialLogin(resp)
+		if err != nil {
+			return nil, err
 		}
-
-		return nil, err
 	}
 
 	if user.LoginProvider != consts.LoginProviderFacebook {
@@ -422,7 +420,6 @@ func processFacebookLogin(token string) (*types.SocialLoginResp, error) {
 		return nil, err
 	}
 
-	resp.Registered = true
 	resp.AccessToken = loginResp.AccessToken
 	resp.RefreshToken = loginResp.RefreshToken
 	resp.User = loginResp.User
@@ -470,7 +467,6 @@ func processAppleLogin(token string) (*types.SocialLoginResp, error) {
 	user, err := usersvc.GetUserByEmail(appleUser.Email)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			resp.Registered = false
 			resp.Email = appleUser.Email
 			resp.LoginProvider = consts.LoginProviderApple
 
@@ -489,7 +485,6 @@ func processAppleLogin(token string) (*types.SocialLoginResp, error) {
 		return nil, err
 	}
 
-	resp.Registered = true
 	resp.AccessToken = loginResp.AccessToken
 	resp.RefreshToken = loginResp.RefreshToken
 	resp.User = loginResp.User

@@ -49,19 +49,12 @@ func CreateUser(userData *types.UserCreateUpdateReq) (*models.User, error) {
 	return user, nil
 }
 
-func updateUserPhone(id int, number string) error {
-	return conn.Db().Model(&models.User{}).
-		Where("id = ?", id).
-		Update("phone", number).
-		Error
-}
-
 func UpdateUser(userData *types.UserCreateUpdateReq) error {
 	user := getUserModel(userData, false)
 
 	err := conn.Db().Model(&models.User{}).
 		Where("id = ?", user.ID).
-		Omit("email", "password", "phone").
+		Omit("email", "password").
 		Updates(&user).
 		Error
 	if err != nil {
@@ -193,7 +186,7 @@ func ForgotPassword(email string) (*types.ForgotPasswordResp, error) {
 		return nil, err
 	}
 
-	if user.LoginProvider != "h" {
+	if user.LoginProvider != consts.LoginProviderHink {
 		return &types.ForgotPasswordResp{
 			Provider: user.LoginProvider,
 		}, nil
@@ -283,6 +276,22 @@ func ResetPassword(req *types.ResetPasswordReq) error {
 	}
 
 	return nil
+}
+
+func CreateUserForSocialLogin(userData *types.SocialLoginResp) (*models.User, error) {
+	user := &models.User{
+		Email:         userData.Email,
+		FirstName:     userData.FirstName,
+		LastName:      userData.LastName,
+		LoginProvider: userData.LoginProvider,
+		Verified:      true,
+	}
+
+	if err := conn.Db().Create(&user).Error; err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return user, nil
 }
 
 func encryptPassword(plainPass string) string {

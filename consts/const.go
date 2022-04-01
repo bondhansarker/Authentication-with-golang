@@ -4,10 +4,10 @@ const (
 	AccessTokenType  = "access"
 	RefreshTokenType = "refresh"
 
-	LoginProviderFacebook = "f"
-	LoginProviderGoogle   = "g"
-	LoginProviderApple    = "a"
-	LoginProviderHink     = "h"
+	LoginProviderFacebook = "facebook"
+	LoginProviderGoogle   = "google"
+	LoginProviderApple    = "apple"
+	LoginProviderHink     = "hink"
 
 	Hink     = "Hink"
 	Facebook = "Facebook"

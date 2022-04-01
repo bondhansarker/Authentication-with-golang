@@ -95,7 +95,7 @@ func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 
 	user := &models.User{}
 
-	res := conn.Db().Where("email = ? AND verified = ?", u.Email, 1).Find(&user)
+	res := conn.Db().Where("email = ?", u.Email).Find(&user)
 
 	if res.RowsAffected > 0 {
 		return errutil.ErrUserAlreadyRegistered
@@ -151,19 +151,19 @@ func (u *UserCreateUpdateReq) isPasswordRequired() bool {
 }
 
 type FbTokenInfo struct {
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	Email     string  `json:"email"`
+	Name      string  `json:"name"`
+	FirstName *string `json:"first_name"`
+	LastName  *string `json:"last_name"`
 }
 
 type GoogleTokenInfo struct {
 	jwt.StandardClaims
 
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	FirstName string `json:"given_name"`
-	LastName  string `json:"family_name"`
+	Email     string  `json:"email"`
+	Name      string  `json:"name"`
+	FirstName *string `json:"given_name"`
+	LastName  *string `json:"family_name"`
 }
 
 type AppleTokenInfo struct {
