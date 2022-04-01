@@ -339,13 +339,13 @@ func createForgotPasswordOtp(userId int, email string) (*types.ForgotPasswordOtp
 		return nil, err
 	}
 
-	//NOTE: "nonce" key will be deleted upon otp verification or resend otp
+	// NOTE: "nonce" key will be deleted upon otp verification or resend otp
 	if err := redissvc.Set(redisConf.OtpNoncePrefix+consts.UserForgotPasswordOtp+nonce, userId, redisConf.OtpNonceTtl); err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	//NOTE: "otp" key will be deleted upon otp verification
+	// NOTE: "otp" key will be deleted upon otp verification
 	if err := redissvc.Set(otpKey, otp, redisConf.OtpTtl); err != nil {
 		log.Error(err)
 		return nil, err

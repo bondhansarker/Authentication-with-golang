@@ -38,4 +38,7 @@ func registerRoutes() {
 	// Authenticated Routes
 	g.POST("/logout", c.Logout, m.Auth())
 	g.POST("/password/change", c.ChangePassword, m.Auth())
+	g.GET("/profile", c.GetUser, m.Auth())
+	g.PATCH("/profile", c.UpdateUser, m.Auth())
+
 }

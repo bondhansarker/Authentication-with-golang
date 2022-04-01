@@ -78,9 +78,7 @@ func (u UserCreateUpdateReq) Validate() error {
 			v.By(u.isValidPasswordFormat),
 			v.By(u.disallowPasswordUpdate),
 		),
-		v.Field(&u.Phone,
-			v.Required.When(u.isCreating()),
-		),
+		v.Field(&u.Phone, v.Required),
 		v.Field(&u.LoginProvider,
 			v.Required.When(u.isCreating()),
 			v.By(u.loginProviderValid),
@@ -148,6 +146,14 @@ func (u *UserCreateUpdateReq) isPasswordRequired() bool {
 	}
 
 	return true
+}
+
+type UserUpdateResponse struct {
+	ID         int     `json:"id"`
+	FirstName  *string `json:"first_name"`
+	LastName   *string `json:"last_name"`
+	Phone      string  `json:"phone"`
+	ProfilePic *string `json:"profile_pic"`
 }
 
 type FbTokenInfo struct {

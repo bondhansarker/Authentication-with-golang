@@ -91,12 +91,12 @@ type (
 	jwtExtractor func(echo.Context) (string, error)
 )
 
-// Algorithms
+// AlgorithmHS256 Algorithms
 const (
 	AlgorithmHS256 = "HS256"
 )
 
-// Errors
+// ErrJWTMissing Errors
 var (
 	ErrJWTMissing = echo.NewHTTPError(http.StatusUnauthorized, "Missing, invalid or expired jwt")
 )
