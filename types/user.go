@@ -25,13 +25,16 @@ type LoggedInUser struct {
 }
 
 type UserResp struct {
-	ID         int     `json:"id"`
-	FirstName  string  `json:"first_name"`
-	LastName   string  `json:"last_name"`
-	Email      string  `json:"email"`
-	Phone      *string `json:"phone"`
-	ProfilePic *string `json:"profile_pic"`
-	Verified   bool    `json:"verified"`
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	UserName   string `json:"user_name"`
+	Email      string `json:"email"`
+	Phone      string `json:"phone"`
+	Website    string `json:"website"`
+	Bio        string `json:"bio"`
+	Gender     string `json:"gender"`
+	ProfilePic string `json:"profile_pic"`
+	Verified   bool   `json:"verified"`
 }
 
 func (u *UserResp) Cache() {
@@ -43,14 +46,17 @@ func (u *UserResp) Cache() {
 }
 
 type UserCreateUpdateReq struct {
-	ID            int     `json:"id"`
-	FirstName     *string `json:"first_name"`
-	LastName      *string `json:"last_name"`
-	Email         string  `json:"email"`
-	Password      *string `json:"password"`
-	Phone         string  `json:"phone"`
-	ProfilePic    *string `json:"profile_pic"`
-	LoginProvider string  `json:"login_provider"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	UserName      string `json:"user_name"`
+	Email         string `json:"email"`
+	Password      string `json:"password"`
+	Phone         string `json:"phone"`
+	Website       string `json:"website"`
+	Bio           string `json:"bio"`
+	Gender        string `json:"gender"`
+	ProfilePic    string `json:"profile_pic"`
+	LoginProvider string `json:"login_provider"`
 }
 
 func (u UserCreateUpdateReq) isCreating() bool {
@@ -59,11 +65,8 @@ func (u UserCreateUpdateReq) isCreating() bool {
 
 func (u UserCreateUpdateReq) Validate() error {
 	return v.ValidateStruct(&u,
-		v.Field(&u.FirstName,
+		v.Field(&u.Name,
 			v.Required.When(!u.isCreating() || (u.isCreating() && u.LoginProvider == consts.LoginProviderHink)),
-			v.Length(3, 50),
-		),
-		v.Field(&u.LastName, v.Required.When(!u.isCreating() || (u.isCreating() && u.LoginProvider == consts.LoginProviderHink)),
 			v.Length(3, 50),
 		),
 		v.Field(&u.Email,
@@ -72,12 +75,16 @@ func (u UserCreateUpdateReq) Validate() error {
 			v.By(u.isAlreadyRegistered),
 			v.By(u.disallowEmailUpdate),
 		),
+		v.Field(&u.UserName,
+			v.Required.When(u.isCreating()),
+			v.By(u.isAlreadyRegistered),
+			v.By(u.disallowUserNameUpdate),
+		),
 		v.Field(&u.Password,
 			v.Required.When(u.isPasswordRequired()),
 			v.By(u.isValidPasswordFormat),
 			v.By(u.disallowPasswordUpdate),
 		),
-		v.Field(&u.Phone, v.Required),
 		v.Field(&u.LoginProvider,
 			v.Required.When(u.isCreating()),
 			v.By(u.loginProviderValid),
@@ -92,18 +99,29 @@ func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 
 	user := &models.User{}
 
-	res := conn.Db().Where("email = ?", u.Email).Find(&user)
+	res := conn.Db().Where("email = ? OR user_name = ?", u.Email, u.Name).Find(&user)
 
 	if res.RowsAffected > 0 {
-		return errutil.ErrUserAlreadyRegistered
+		if user.Email == u.Email {
+			return errutil.ErrEmailAlreadyRegistered
+		} else {
+			return errutil.ErrUserNameAlreadyRegistered
+		}
 	}
-
 	return nil
 }
 
 func (u *UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
 	if !u.isCreating() && !methodutil.IsEmpty(u.Email) {
 		return errutil.ErrEmailUpdateNotAllowed
+	}
+
+	return nil
+}
+
+func (u *UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
+	if !u.isCreating() && !methodutil.IsEmpty(u.Email) {
+		return errutil.ErrUserNameUpdateNotAllowed
 	}
 
 	return nil
@@ -119,7 +137,7 @@ func (u *UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
 
 func (u *UserCreateUpdateReq) isValidPasswordFormat(value interface{}) error {
 	if u.isCreating() && u.LoginProvider == consts.LoginProviderHink {
-		return methodutil.ValidatePassword(*u.Password)
+		return methodutil.ValidatePassword(u.Password)
 	}
 
 	return nil
@@ -148,19 +166,19 @@ func (u *UserCreateUpdateReq) isPasswordRequired() bool {
 }
 
 type FbTokenInfo struct {
-	Email     string  `json:"email"`
-	Name      string  `json:"name"`
-	FirstName *string `json:"first_name"`
-	LastName  *string `json:"last_name"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 }
 
 type GoogleTokenInfo struct {
 	jwt.StandardClaims
 
-	Email     string  `json:"email"`
-	Name      string  `json:"name"`
-	FirstName *string `json:"given_name"`
-	LastName  *string `json:"family_name"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	FirstName string `json:"given_name"`
+	LastName  string `json:"family_name"`
 }
 
 type AppleTokenInfo struct {

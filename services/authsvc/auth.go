@@ -56,7 +56,7 @@ func Login(req *types.LoginReq) (*types.LoginResp, error) {
 	}
 
 	loginPass := []byte(req.Password)
-	hashedPass := []byte(*user.Password)
+	hashedPass := []byte(user.Password)
 
 	if err = bcrypt.CompareHashAndPassword(hashedPass, loginPass); err != nil {
 		log.Error(err)
@@ -330,9 +330,8 @@ func processGoogleLogin(token string) (*types.SocialLoginResp, error) {
 	user, err := usersvc.GetUserByEmail(googleUser.Email)
 
 	if err != nil && err == gorm.ErrRecordNotFound {
-		if respErr := methodutil.CopyStruct(googleUser, &resp); respErr != nil {
-			return nil, respErr
-		}
+		resp.Email = googleUser.Email
+		resp.Name = fmt.Sprintf("%s %s", googleUser.FirstName, googleUser.LastName)
 		resp.LoginProvider = consts.LoginProviderGoogle
 		user, err = usersvc.CreateUserForSocialLogin(resp)
 		if err != nil {
@@ -396,9 +395,8 @@ func processFacebookLogin(token string) (*types.SocialLoginResp, error) {
 	user, err := usersvc.GetUserByEmail(fbUser.Email)
 
 	if err != nil && err == gorm.ErrRecordNotFound {
-		if respErr := methodutil.CopyStruct(fbUser, &resp); respErr != nil {
-			return nil, respErr
-		}
+		resp.Email = fbUser.Email
+		resp.Name = fmt.Sprintf("%s %s", fbUser.FirstName, fbUser.LastName)
 		resp.LoginProvider = consts.LoginProviderFacebook
 		user, err = usersvc.CreateUserForSocialLogin(resp)
 		if err != nil {
@@ -589,6 +587,6 @@ func getLoginProviderError(provider string) error {
 	case consts.Google:
 		return errutil.ErrUserAlreadyRegisteredViaGoogle
 	default:
-		return errutil.ErrUserAlreadyRegistered
+		return errutil.ErrEmailAlreadyRegistered
 	}
 }

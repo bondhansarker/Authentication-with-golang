@@ -6,12 +6,15 @@ import (
 
 type User struct {
 	ID            int        `json:"id"`
-	FirstName     *string    `json:"first_name" gorm:"default:Hink"`
-	LastName      *string    `json:"last_name" gorm:"default:User"`
+	Name          string     `json:"name" gorm:"default:YourName"`
+	UserName      string     `json:"user_name"`
 	Email         string     `json:"email"`
-	Password      *string    `json:"password,omitempty"`
+	Password      string     `json:"password,omitempty"`
 	Phone         string     `json:"phone"`
-	ProfilePic    *string    `json:"profile_pic"`
+	Website       string     `json:"website"`
+	Bio           string     `json:"bio"`
+	Gender        string     `json:"gender"`
+	ProfilePic    string     `json:"profile_pic"`
 	LoginProvider string     `json:"login_provider"`
 	Verified      bool       `json:"verified"`
 	CreatedAt     time.Time  `json:"created_at"`

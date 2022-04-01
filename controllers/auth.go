@@ -31,12 +31,7 @@ func Signup(c echo.Context) error {
 
 	err = usersvc.CreateUser(req)
 	if err != nil {
-		switch err {
-		case errutil.ErrUserAlreadyRegistered:
-			return c.JSON(http.StatusUnprocessableEntity, msgutil.UserAlreadyRegisteredMsg())
-		default:
-			return c.JSON(http.StatusInternalServerError, msgutil.EntityCreationFailedMsg("User"))
-		}
+		return c.JSON(http.StatusInternalServerError, msgutil.EntityCreationFailedMsg("User"))
 	}
 
 	return c.NoContent(http.StatusCreated)
@@ -117,7 +112,7 @@ func SocialLogin(c echo.Context) error {
 		switch err {
 		case errutil.ErrInvalidLoginToken:
 			return c.JSON(http.StatusUnauthorized, msgutil.InvalidLoginTokenMsg())
-		case errutil.ErrUserAlreadyRegistered:
+		case errutil.ErrEmailAlreadyRegistered:
 			return c.JSON(http.StatusUnprocessableEntity, msgutil.UserAlreadyRegisteredMsg())
 		case errutil.ErrUserAlreadyRegisteredViaGoogle:
 			return c.JSON(http.StatusUnprocessableEntity, msgutil.UserAlreadyRegisteredViaSocialMsg("Google"))

@@ -155,8 +155,7 @@ type SocialLoginResp struct {
 	RefreshToken string    `json:"refresh_token,omitempty"`
 	User         *UserResp `json:"user,omitempty"`
 
-	FirstName     *string `json:"first_name,omitempty"`
-	LastName      *string `json:"last_name,omitempty"`
-	Email         string  `json:"email,omitempty"`
-	LoginProvider string  `json:"login_provider,omitempty"`
+	Name          string `json:"name,omitempty"`
+	Email         string `json:"email,omitempty"`
+	LoginProvider string `json:"login_provider,omitempty"`
 }
