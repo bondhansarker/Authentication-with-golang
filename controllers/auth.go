@@ -14,7 +14,7 @@ import (
 )
 
 func Signup(c echo.Context) error {
-	var req *types.UserCreateUpdateReq
+	var req types.UserCreateUpdateReq
 	var err error
 
 	if err = c.Bind(&req); err != nil {
@@ -29,7 +29,7 @@ func Signup(c echo.Context) error {
 		})
 	}
 
-	err = usersvc.CreateUser(req)
+	err = usersvc.CreateUser(&req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, msgutil.EntityCreationFailedMsg("User"))
 	}
@@ -38,7 +38,7 @@ func Signup(c echo.Context) error {
 }
 
 func Login(c echo.Context) error {
-	var cred *types.LoginReq
+	var cred types.LoginReq
 	var res *types.LoginResp
 	var err error
 
@@ -53,7 +53,7 @@ func Login(c echo.Context) error {
 		})
 	}
 
-	if res, err = authsvc.Login(cred); err != nil {
+	if res, err = authsvc.Login(&cred); err != nil {
 		switch err {
 		case errutil.ErrInvalidEmail, errutil.ErrInvalidPassword:
 			return c.JSON(http.StatusUnauthorized, msgutil.InvalidUserPassMsg())
@@ -93,7 +93,7 @@ func Logout(c echo.Context) error {
 }
 
 func SocialLogin(c echo.Context) error {
-	var req *types.SocialLoginReq
+	var req types.SocialLoginReq
 	var err error
 
 	if err = c.Bind(&req); err != nil {
@@ -107,7 +107,7 @@ func SocialLogin(c echo.Context) error {
 		})
 	}
 
-	resp, err := authsvc.SocialLogin(req)
+	resp, err := authsvc.SocialLogin(&req)
 	if err != nil {
 		switch err {
 		case errutil.ErrInvalidLoginToken:
@@ -133,7 +133,7 @@ func SocialLogin(c echo.Context) error {
 }
 
 func RefreshToken(c echo.Context) error {
-	var token *types.TokenRefreshReq
+	var token types.TokenRefreshReq
 	var res *types.LoginResp
 	var err error
 

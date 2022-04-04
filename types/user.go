@@ -72,12 +72,16 @@ func (u UserCreateUpdateReq) Validate() error {
 		v.Field(&u.Email,
 			v.Required.When(u.isCreating()),
 			is.EmailFormat,
-			v.By(u.isAlreadyRegistered),
+			v.By(func(v interface{}) error {
+				return u.isAlreadyRegistered("email")
+			}),
 			v.By(u.disallowEmailUpdate),
 		),
 		v.Field(&u.UserName,
 			v.Required.When(u.isCreating()),
-			v.By(u.isAlreadyRegistered),
+			v.By(func(v interface{}) error {
+				return u.isAlreadyRegistered("user_name")
+			}),
 			v.By(u.disallowUserNameUpdate),
 		),
 		v.Field(&u.Password,
@@ -99,12 +103,13 @@ func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 
 	user := &models.User{}
 
-	res := conn.Db().Where("email = ? OR user_name = ?", u.Email, u.Name).Find(&user)
+	res := conn.Db().Where("email = ? OR user_name = ?", u.Email, u.UserName).Find(&user)
 
 	if res.RowsAffected > 0 {
-		if user.Email == u.Email {
+		if value == "email" && user.Email == u.Email {
 			return errutil.ErrEmailAlreadyRegistered
-		} else {
+		}
+		if value == "user_name" && user.UserName == u.UserName {
 			return errutil.ErrUserNameAlreadyRegistered
 		}
 	}
@@ -120,7 +125,7 @@ func (u *UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
 }
 
 func (u *UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
-	if !u.isCreating() && !methodutil.IsEmpty(u.Email) {
+	if !u.isCreating() && !methodutil.IsEmpty(u.UserName) {
 		return errutil.ErrUserNameUpdateNotAllowed
 	}
 

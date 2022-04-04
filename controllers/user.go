@@ -32,7 +32,7 @@ func GetUser(c echo.Context) error {
 }
 
 func UpdateUser(c echo.Context) error {
-	var req *types.UserCreateUpdateReq
+	var req types.UserCreateUpdateReq
 	var user *types.LoggedInUser
 	var err error
 
@@ -54,7 +54,7 @@ func UpdateUser(c echo.Context) error {
 		})
 	}
 
-	if err = usersvc.UpdateUser(req); err != nil {
+	if err = usersvc.UpdateUser(&req); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
 		}
