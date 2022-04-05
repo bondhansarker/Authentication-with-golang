@@ -150,11 +150,7 @@ func (s *SocialLoginReq) loginProviderValid(value interface{}) error {
 	return nil
 }
 
-type SocialLoginResp struct {
-	AccessToken  string    `json:"access_token,omitempty"`
-	RefreshToken string    `json:"refresh_token,omitempty"`
-	User         *UserResp `json:"user,omitempty"`
-
+type SocialLoginData struct {
 	Name          string `json:"name,omitempty"`
 	Email         string `json:"email,omitempty"`
 	LoginProvider string `json:"login_provider,omitempty"`

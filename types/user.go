@@ -25,16 +25,17 @@ type LoggedInUser struct {
 }
 
 type UserResp struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	UserName   string `json:"user_name"`
-	Email      string `json:"email"`
-	Phone      string `json:"phone"`
-	Website    string `json:"website"`
-	Bio        string `json:"bio"`
-	Gender     string `json:"gender"`
-	ProfilePic string `json:"profile_pic"`
-	Verified   bool   `json:"verified"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	UserName      string `json:"user_name"`
+	Email         string `json:"email"`
+	Phone         string `json:"phone"`
+	Website       string `json:"website"`
+	Bio           string `json:"bio"`
+	Gender        string `json:"gender"`
+	ProfilePic    string `json:"profile_pic"`
+	Verified      bool   `json:"verified"`
+	LoginProvider string `json:"login_provider"`
 }
 
 func (u *UserResp) Cache() {
@@ -66,7 +67,7 @@ func (u UserCreateUpdateReq) isCreating() bool {
 func (u UserCreateUpdateReq) Validate() error {
 	return v.ValidateStruct(&u,
 		v.Field(&u.Name,
-			v.Required.When(!u.isCreating() || (u.isCreating() && u.LoginProvider == consts.LoginProviderHink)),
+			// v.Required.When(!u.isCreating() || (u.isCreating() && u.LoginProvider == consts.LoginProviderHink)),
 			v.Length(3, 50),
 		),
 		v.Field(&u.Email,
@@ -78,11 +79,11 @@ func (u UserCreateUpdateReq) Validate() error {
 			v.By(u.disallowEmailUpdate),
 		),
 		v.Field(&u.UserName,
-			v.Required.When(u.isCreating()),
+			// v.Required.When(u.isCreating()),
 			v.By(func(v interface{}) error {
 				return u.isAlreadyRegistered("user_name")
 			}),
-			v.By(u.disallowUserNameUpdate),
+			// v.By(u.disallowUserNameUpdate),
 		),
 		v.Field(&u.Password,
 			v.Required.When(u.isPasswordRequired()),
@@ -97,9 +98,9 @@ func (u UserCreateUpdateReq) Validate() error {
 }
 
 func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
-	if !u.isCreating() { // no need to check while doing "update"
-		return nil
-	}
+	// if !u.isCreating() { // no need to check while doing "update"
+	// 	return nil
+	// }
 
 	user := &models.User{}
 

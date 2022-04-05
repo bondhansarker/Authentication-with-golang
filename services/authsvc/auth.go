@@ -287,7 +287,7 @@ func userBelongsToTokenUuid(userId int, uuid, uuidType string) bool {
 	return true
 }
 
-func SocialLogin(data *types.SocialLoginReq) (*types.SocialLoginResp, error) {
+func SocialLogin(data *types.SocialLoginReq) (*types.LoginResp, error) {
 	switch data.LoginProvider {
 	case consts.LoginProviderGoogle:
 		resp, err := processGoogleLogin(data.Token)
@@ -315,8 +315,9 @@ func SocialLogin(data *types.SocialLoginReq) (*types.SocialLoginResp, error) {
 	}
 }
 
-func processGoogleLogin(token string) (*types.SocialLoginResp, error) {
-	resp := &types.SocialLoginResp{}
+func processGoogleLogin(token string) (*types.LoginResp, error) {
+	req := &types.SocialLoginData{}
+	resp := &types.LoginResp{}
 
 	if !isValidGoogleIdToken(token) {
 		return nil, errutil.ErrInvalidLoginToken
@@ -330,10 +331,9 @@ func processGoogleLogin(token string) (*types.SocialLoginResp, error) {
 	user, err := usersvc.GetUserByEmail(googleUser.Email)
 
 	if err != nil && err == gorm.ErrRecordNotFound {
-		resp.Email = googleUser.Email
-		resp.Name = fmt.Sprintf("%s %s", googleUser.FirstName, googleUser.LastName)
-		resp.LoginProvider = consts.LoginProviderGoogle
-		user, err = usersvc.CreateUserForSocialLogin(resp)
+		req.Email = googleUser.Email
+		req.LoginProvider = consts.LoginProviderGoogle
+		user, err = usersvc.CreateUserForSocialLogin(req)
 		if err != nil {
 			return nil, err
 		}
@@ -384,8 +384,9 @@ func googleUserInfo(idToken string) (*types.GoogleTokenInfo, error) {
 	return nil, errutil.ErrParseJwt
 }
 
-func processFacebookLogin(token string) (*types.SocialLoginResp, error) {
-	resp := &types.SocialLoginResp{}
+func processFacebookLogin(token string) (*types.LoginResp, error) {
+	req := &types.SocialLoginData{}
+	resp := &types.LoginResp{}
 
 	fbUser, err := fbUserInfo(token)
 	if err != nil {
@@ -395,10 +396,9 @@ func processFacebookLogin(token string) (*types.SocialLoginResp, error) {
 	user, err := usersvc.GetUserByEmail(fbUser.Email)
 
 	if err != nil && err == gorm.ErrRecordNotFound {
-		resp.Email = fbUser.Email
-		resp.Name = fmt.Sprintf("%s %s", fbUser.FirstName, fbUser.LastName)
-		resp.LoginProvider = consts.LoginProviderFacebook
-		user, err = usersvc.CreateUserForSocialLogin(resp)
+		req.Email = fbUser.Email
+		req.LoginProvider = consts.LoginProviderFacebook
+		user, err = usersvc.CreateUserForSocialLogin(req)
 		if err != nil {
 			return nil, err
 		}
@@ -446,8 +446,9 @@ func fbUserInfo(token string) (*types.FbTokenInfo, error) {
 	return tokenInfo, nil
 }
 
-func processAppleLogin(token string) (*types.SocialLoginResp, error) {
-	resp := &types.SocialLoginResp{}
+func processAppleLogin(token string) (*types.LoginResp, error) {
+	req := &types.SocialLoginData{}
+	resp := &types.LoginResp{}
 
 	if !isValidAppleIdToken(token) {
 		return nil, errutil.ErrInvalidLoginToken
@@ -461,8 +462,8 @@ func processAppleLogin(token string) (*types.SocialLoginResp, error) {
 	user, err := usersvc.GetUserByEmail(appleUser.Email)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			resp.Email = appleUser.Email
-			resp.LoginProvider = consts.LoginProviderApple
+			req.Email = appleUser.Email
+			req.LoginProvider = consts.LoginProviderApple
 
 			return resp, nil
 		}

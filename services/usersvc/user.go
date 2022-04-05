@@ -289,7 +289,7 @@ func ResetPassword(req *types.ResetPasswordReq) error {
 	return nil
 }
 
-func CreateUserForSocialLogin(userData *types.SocialLoginResp) (*models.User, error) {
+func CreateUserForSocialLogin(userData *types.SocialLoginData) (*models.User, error) {
 	user := &models.User{}
 	respErr := methodutil.CopyStruct(userData, &user)
 	if respErr != nil {
