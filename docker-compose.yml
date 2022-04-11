@@ -10,7 +10,7 @@ services:
     volumes:
       - .:/usr/src/app
     environment:
-      - CONSUL_ENDPOINT=consul:8500
+      - CONSUL_URL=consul:8500
       - CONSUL_PATH=config
     restart: unless-stopped
     tty: true
@@ -26,8 +26,6 @@ services:
   mysql:
     container_name: mysql
     image: mysql
-    env_file:
-      - .env
     restart: unless-stopped
     tty: true
     hostname: mysql
@@ -42,13 +40,24 @@ services:
     container_name: redis
     hostname: redis
     restart: always
-    env_file:
-      - .env
     ports:
       - 6379:6379
     command: redis-server
     volumes:
       - cache_data:/data
+
+  consul:
+    container_name: consul
+    image: consul:latest
+    restart: unless-stopped
+    tty: true
+    hostname: consul
+    stdin_open: true
+    ports:
+      - 8500:8500
+  # TODO: Make consul persist data since development mode doesn't support persistence
+  #    volumes:
+  #      - consul_data:/consul/data
 
 volumes:
   mysql_data:

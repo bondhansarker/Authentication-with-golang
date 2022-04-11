@@ -64,11 +64,6 @@ type MailConfig struct {
 	Timeout    time.Duration
 }
 
-type SmsConfig struct {
-	ServiceURL string
-	Timeout    time.Duration
-}
-
 type AppleLoginConfig struct {
 	AppBundleID           string
 	ApplePublicKeyUrl     string
@@ -82,7 +77,6 @@ type Config struct {
 	Jwt        *JwtConfig
 	Redis      *RedisConfig
 	Mail       *MailConfig
-	Sms        *SmsConfig
 	AppleLogin *AppleLoginConfig
 }
 
@@ -118,12 +112,11 @@ func AppleLogin() *AppleLoginConfig {
 
 func LoadConfig() {
 	setDefaultConfig()
+	_ = viper.BindEnv("CONSUL_URL")
+	_ = viper.BindEnv("CONSUL_PATH")
 
-	_ = viper.BindEnv("consul_url")
-	_ = viper.BindEnv("consul_path")
-
-	consulURL := viper.GetString("consul_url")
-	consulPath := viper.GetString("consul_path")
+	consulURL := viper.GetString("CONSUL_URL")
+	consulPath := viper.GetString("CONSUL_PATH")
 
 	if consulURL != "" && consulPath != "" {
 		_ = viper.AddRemoteProvider("consul", consulURL, consulPath)
@@ -155,12 +148,12 @@ func setDefaultConfig() {
 		Port:           "8080",
 		MockOtpEnabled: true,
 		MockOtp:        "",
-		GoogleApiKey:   "",
+		GoogleApiKey:   "419662912672-uh565e54cgnmbve60bubsi0dqbdtpnia.apps.googleusercontent.com",
 		AppKey:         "395d76cd709d4a52b12ea654b5220ca34bd6c041d352bf65",
 	}
 
 	config.Db = &DbConfig{
-		Host:            "127.0.0.1",
+		Host:            "mysql",
 		Port:            "3306",
 		User:            "root",
 		Pass:            "root",
@@ -180,7 +173,7 @@ func setDefaultConfig() {
 	}
 
 	config.Redis = &RedisConfig{
-		Host:              "127.0.0.1",
+		Host:              "redis",
 		Port:              "6379",
 		Pass:              "",
 		Db:                1,
