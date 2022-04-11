@@ -9,12 +9,12 @@ type User struct {
 	Name          string     `json:"name"`
 	UserName      string     `json:"user_name"`
 	Email         string     `json:"email"`
-	Password      string     `json:"password,omitempty"`
-	Phone         string     `json:"phone"`
-	Website       string     `json:"website"`
-	Bio           string     `json:"bio"`
-	Gender        string     `json:"gender"`
-	ProfilePic    string     `json:"profile_pic"`
+	Password      *string    `json:"password,omitempty"`
+	Phone         *string    `json:"phone"`
+	Website       *string    `json:"website"`
+	Bio           *string    `json:"bio"`
+	Gender        *string    `json:"gender"`
+	ProfilePic    *string    `json:"profile_pic"`
 	LoginProvider string     `json:"login_provider"`
 	Verified      bool       `json:"verified"`
 	CreatedAt     time.Time  `json:"created_at"`

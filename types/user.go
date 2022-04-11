@@ -107,11 +107,13 @@ func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	res := conn.Db().Where("email = ? OR user_name = ?", u.Email, u.UserName).Find(&user)
 
 	if res.RowsAffected > 0 {
-		if value == "email" && user.Email == u.Email {
-			return errutil.ErrEmailAlreadyRegistered
-		}
-		if value == "user_name" && user.UserName == u.UserName {
-			return errutil.ErrUserNameAlreadyRegistered
+		if user.ID != u.ID {
+			if value == "email" && user.Email == u.Email {
+				return errutil.ErrEmailAlreadyRegistered
+			}
+			if value == "user_name" && user.UserName == u.UserName {
+				return errutil.ErrUserNameAlreadyRegistered
+			}
 		}
 	}
 	return nil

@@ -56,7 +56,7 @@ func Login(req *types.LoginReq) (*types.LoginResp, error) {
 	}
 
 	loginPass := []byte(req.Password)
-	hashedPass := []byte(user.Password)
+	hashedPass := []byte(*user.Password)
 
 	if err = bcrypt.CompareHashAndPassword(hashedPass, loginPass); err != nil {
 		log.Error(err)

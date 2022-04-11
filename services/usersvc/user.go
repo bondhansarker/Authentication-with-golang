@@ -44,7 +44,7 @@ func CreateUser(userData *types.UserCreateUpdateReq) error {
 	}
 
 	if userData.LoginProvider == consts.LoginProviderHink {
-		user.Password = encryptPassword(userData.Password)
+		*user.Password = encryptPassword(userData.Password)
 	}
 
 	if err := conn.Db().Create(&user).Error; err != nil {
@@ -171,7 +171,8 @@ func ChangePassword(id int, data *types.ChangePasswordReq) error {
 		return err
 	}
 
-	currentPass := []byte(user.Password)
+	log.Info("========================================")
+	currentPass := []byte(*user.Password)
 	if err = bcrypt.CompareHashAndPassword(currentPass, []byte(data.OldPassword)); err != nil {
 		log.Error(err)
 		return errutil.ErrInvalidPassword
@@ -311,7 +312,7 @@ func encryptPassword(plainPass string) string {
 }
 
 func passwordResetSecret(user *models.User) string {
-	return user.Password + strconv.Itoa(int(user.CreatedAt.Unix()))
+	return *user.Password + strconv.Itoa(int(user.CreatedAt.Unix()))
 }
 
 func getUserModel(userData *types.UserCreateUpdateReq) (*models.User, error) {
