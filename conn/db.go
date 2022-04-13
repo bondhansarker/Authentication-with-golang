@@ -3,6 +3,7 @@ package conn
 import (
 	"auth/config"
 	"auth/log"
+	"auth/models"
 	"fmt"
 	"time"
 
@@ -50,9 +51,9 @@ func ConnectDb() {
 
 	db = dB
 
-	// db.AutoMigrate(
-	// 	&models.User{},
-	// )
+	db.AutoMigrate(
+		&models.User{},
+	)
 
 	log.Info("mysql connection successful...")
 }
