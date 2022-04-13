@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: auth
+  name: auth
+  namespace: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+      - env:
+        - name: CONSUL_URL
+          value: consul.consul:8500
+        - name: CONSUL_PATH
+          value: auth
+        image: asia-southeast1-docker.pkg.dev/strategic-grove-346615/docker/auth:dev-0.0.1
+        imagePullPolicy: Always
+        name: auth
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        args:
+          - "serve"
+      imagePullSecrets:
+      - name: regsecret
