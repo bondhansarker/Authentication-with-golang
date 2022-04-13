@@ -1,4 +1,6 @@
-FROM golang:alpine
+ARG GO_VERSION=1.14
+
+FROM golang:${GO_VERSION}-alpine
 
 WORKDIR /usr/src/app
 

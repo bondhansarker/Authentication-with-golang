@@ -1,0 +1,46 @@
+{
+  "app": {
+    "name": "auth",
+    "port": 8080,
+    "mockOtpEnabled": true,
+    "mockOtp": "",
+    "googleApiKey": "419662912672-uh565e54cgnmbve60bubsi0dqbdtpnia.apps.googleusercontent.com",
+    "appKey": "395d76cd709d4a52b12ea654b5220ca34bd6c041d352bf65"
+  },
+  "db": {
+    "host": "mysql",
+    "port": "3306",
+    "user": "root",
+    "pass": "root",
+    "schema": "auth",
+    "maxIdleConn": 1,
+    "maxOpenConn": 2,
+    "maxConnLifetime": 30,
+    "debug": true
+  },
+  "jwt": {
+    "accessTokenSecret": "accesstokensecret",
+    "refreshTokenSecret": "refreshtokensecret",
+    "accessTokenExpiry": 3600,
+    "refreshTokenExpiry": 604800,
+    "contextKey": "user"
+  },
+  "mail": {
+    "serviceURL": "",
+    "timeout": 3
+  },
+  "redis": {
+    "host": "redis",
+    "port": "6379",
+    "pass": "",
+    "db": 1,
+    "accessUuidPrefix": "consumer_access-uuid_",
+    "refreshUuidPrefix": "consumer_refresh-uuid_",
+    "userPrefix": "consumer_user_",
+    "otpPrefix": "consumer_otp_",
+    "otpNoncePrefix": "consumer_otp-nonce_",
+    "userTtl": 604800,
+    "otpTtl": 300,
+    "otpNonceTtl": 1800
+  }
+}
