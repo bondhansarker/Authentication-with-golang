@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: auth
     stdin_open: true
-    image: auth
+    image: hink_auth
     volumes:
       - .:/usr/src/app
     environment:
@@ -55,9 +55,6 @@ services:
     stdin_open: true
     ports:
       - 8500:8500
-  # TODO: Make consul persist data since development mode doesn't support persistence
-  #    volumes:
-  #      - consul_data:/consul/data
 
 volumes:
   mysql_data:
