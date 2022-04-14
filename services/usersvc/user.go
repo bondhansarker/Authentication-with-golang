@@ -13,6 +13,7 @@ import (
 	"auth/utils/methodutil"
 	"auth/utils/msgutil"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -171,7 +172,6 @@ func ChangePassword(id int, data *types.ChangePasswordReq) error {
 		return err
 	}
 
-	log.Info("========================================")
 	currentPass := []byte(*user.Password)
 	if err = bcrypt.CompareHashAndPassword(currentPass, []byte(data.OldPassword)); err != nil {
 		log.Error(err)
@@ -318,6 +318,7 @@ func passwordResetSecret(user *models.User) string {
 func getUserModel(userData *types.UserCreateUpdateReq) (*models.User, error) {
 	user := &models.User{}
 	respErr := methodutil.CopyStruct(userData, &user)
+	user.UserName = strings.ToLower(user.UserName)
 	if respErr != nil {
 		return nil, respErr
 	}

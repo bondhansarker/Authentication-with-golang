@@ -11,6 +11,7 @@ import (
 	"auth/utils/methodutil"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 
@@ -103,15 +104,16 @@ func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	// }
 
 	user := &models.User{}
+	userName := strings.ToLower(u.UserName)
 
-	res := conn.Db().Where("email = ? OR user_name = ?", u.Email, u.UserName).Find(&user)
+	res := conn.Db().Where("email = ? OR user_name = ?", u.Email, userName).Find(&user)
 
 	if res.RowsAffected > 0 {
 		if user.ID != u.ID {
 			if value == "email" && user.Email == u.Email {
 				return errutil.ErrEmailAlreadyRegistered
 			}
-			if value == "user_name" && user.UserName == u.UserName {
+			if value == "user_name" && user.UserName == userName {
 				return errutil.ErrUserNameAlreadyRegistered
 			}
 		}
