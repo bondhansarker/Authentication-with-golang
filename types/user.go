@@ -113,7 +113,7 @@ func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 			if value == "email" && user.Email == u.Email {
 				return errutil.ErrEmailAlreadyRegistered
 			}
-			if value == "user_name" && user.UserName == userName {
+			if value == "user_name" && userName != "" && user.UserName == userName {
 				return errutil.ErrUserNameAlreadyRegistered
 			}
 		}
