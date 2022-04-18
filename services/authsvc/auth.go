@@ -104,9 +104,11 @@ func login(userId int, isAfterOtpVerification bool) (*types.LoginResp, error) {
 	}
 
 	res := &types.LoginResp{
-		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
-		User:         user,
+		AccessToken:        token.AccessToken,
+		AccessTokenExpiry:  token.AccessExpiry,
+		RefreshToken:       token.RefreshToken,
+		RefreshTokenExpiry: token.RefreshExpiry,
+		User:               user,
 	}
 	return res, nil
 }

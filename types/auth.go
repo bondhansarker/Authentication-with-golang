@@ -27,9 +27,11 @@ type TokenRefreshReq struct {
 }
 
 type LoginResp struct {
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token"`
-	User         *UserResp `json:"user"`
+	AccessToken        string    `json:"access_token"`
+	AccessTokenExpiry  int64     `json:"access_token_expiry"`
+	RefreshToken       string    `json:"refresh_token"`
+	RefreshTokenExpiry int64     `json:"refresh_token_expiry"`
+	User               *UserResp `json:"user"`
 }
 
 type JwtToken struct {
