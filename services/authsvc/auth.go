@@ -166,9 +166,11 @@ func RefreshToken(refreshToken string) (*types.LoginResp, error) {
 	}
 
 	res := &types.LoginResp{
-		AccessToken:  newToken.AccessToken,
-		RefreshToken: newToken.RefreshToken,
-		User:         user,
+		AccessToken:        newToken.AccessToken,
+		AccessTokenExpiry:  newToken.AccessExpiry,
+		RefreshToken:       newToken.RefreshToken,
+		RefreshTokenExpiry: newToken.RefreshExpiry,
+		User:               user,
 	}
 
 	return res, nil
