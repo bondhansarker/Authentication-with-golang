@@ -128,8 +128,6 @@ func LoadConfig() {
 			log.Println(fmt.Sprintf("%s named \"%s\"", err.Error(), consulPath))
 		}
 
-		config = Config{}
-
 		if err := viper.Unmarshal(&config); err != nil {
 			panic(err)
 		}
