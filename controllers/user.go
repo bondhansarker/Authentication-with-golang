@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"net/http"
+
 	"auth/log"
 	"auth/services/usersvc"
 	"auth/types"
@@ -8,7 +10,6 @@ import (
 	"auth/utils/msgutil"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func GetUser(c echo.Context) error {
@@ -36,7 +37,7 @@ func UpdateUser(c echo.Context) error {
 	var user *types.LoggedInUser
 	var err error
 
-	if user, err = usersvc.GetUserFromContext(c); err != nil {
+	if user, err = usersvc.GetUserFromHeader(c); err != nil {
 		log.Error(err)
 		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
 	}
@@ -53,12 +54,10 @@ func UpdateUser(c echo.Context) error {
 			Error: err,
 		})
 	}
-
 	if err = usersvc.UpdateUser(&req); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
 		}
-
 		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
 	}
 

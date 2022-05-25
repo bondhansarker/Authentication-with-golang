@@ -9,6 +9,8 @@ const (
 	LoginProviderApple    = "apple"
 	LoginProviderHink     = "hink"
 
+	UserIDHeader = "hink-user-id"
+
 	Hink     = "Hink"
 	Facebook = "Facebook"
 	Google   = "Google"

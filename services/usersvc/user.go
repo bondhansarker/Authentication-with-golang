@@ -1,6 +1,10 @@
 package usersvc
 
 import (
+	"strconv"
+	"strings"
+	"time"
+
 	"auth/clients"
 	"auth/config"
 	"auth/conn"
@@ -12,9 +16,6 @@ import (
 	"auth/utils/errutil"
 	"auth/utils/methodutil"
 	"auth/utils/msgutil"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -63,15 +64,19 @@ func UpdateUser(userData *types.UserCreateUpdateReq) error {
 		return errutil.ErrUserUpdate
 	}
 
-	err = conn.Db().Model(&models.User{}).
+	res := conn.Db().Model(&models.User{}).
 		Where("id = ?", user.ID).
 		Omit("email", "password", "login_provider").
-		Updates(&user).
-		Error
+		Updates(&user)
 
-	if err != nil {
+	if res.Error != nil {
 		log.Error(err)
 		return errutil.ErrUserUpdate
+	}
+
+	if res.RowsAffected == 0 {
+		log.Error(err)
+		return gorm.ErrRecordNotFound
 	}
 
 	if err := refreshUserCache(user.ID); err != nil {
@@ -139,6 +144,18 @@ func GetUserFromContext(c echo.Context) (*types.LoggedInUser, error) {
 	}
 
 	return user, nil
+}
+
+func GetUserFromHeader(c echo.Context) (*types.LoggedInUser, error) {
+	userIDString := c.Request().Header.Get(consts.UserIDHeader)
+	userID, _ := strconv.Atoi(userIDString)
+	if userID == 0 {
+		return nil, errutil.ErrNoContextUser
+	}
+	currentUser := &types.LoggedInUser{
+		ID: userID,
+	}
+	return currentUser, nil
 }
 
 func GetUser(id int) (*types.UserResp, error) {
