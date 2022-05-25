@@ -1,6 +1,10 @@
 package types
 
 import (
+	"regexp"
+	"strconv"
+	"strings"
+
 	"auth/config"
 	"auth/conn"
 	"auth/consts"
@@ -9,9 +13,6 @@ import (
 	"auth/services/redissvc"
 	"auth/utils/errutil"
 	"auth/utils/methodutil"
-	"regexp"
-	"strconv"
-	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 
@@ -26,17 +27,17 @@ type LoggedInUser struct {
 }
 
 type UserResp struct {
-	ID            int    `json:"id"`
-	Name          string `json:"name"`
-	UserName      string `json:"user_name"`
-	Email         string `json:"email"`
-	Phone         string `json:"phone"`
-	Website       string `json:"website"`
-	Bio           string `json:"bio"`
-	Gender        string `json:"gender"`
-	ProfilePic    string `json:"profile_pic"`
-	Verified      bool   `json:"verified"`
-	LoginProvider string `json:"login_provider"`
+	ID                  int    `json:"id"`
+	Name                string `json:"name"`
+	UserName            string `json:"user_name"`
+	Email               string `json:"email"`
+	Phone               string `json:"phone"`
+	Website             string `json:"website"`
+	Bio                 string `json:"bio"`
+	Gender              string `json:"gender"`
+	ProfilePicExtension string `json:"profile_pic_extension"`
+	Verified            bool   `json:"verified"`
+	LoginProvider       string `json:"login_provider"`
 }
 
 func (u *UserResp) Cache() {
@@ -48,17 +49,17 @@ func (u *UserResp) Cache() {
 }
 
 type UserCreateUpdateReq struct {
-	ID            int    `json:"id"`
-	Name          string `json:"name"`
-	UserName      string `json:"user_name"`
-	Email         string `json:"email"`
-	Password      string `json:"password"`
-	Phone         string `json:"phone"`
-	Website       string `json:"website"`
-	Bio           string `json:"bio"`
-	Gender        string `json:"gender"`
-	ProfilePic    string `json:"profile_pic"`
-	LoginProvider string `json:"login_provider"`
+	ID                  int    `json:"id"`
+	Name                string `json:"name"`
+	UserName            string `json:"user_name"`
+	Email               string `json:"email"`
+	Password            string `json:"password"`
+	Phone               string `json:"phone"`
+	Website             string `json:"website"`
+	Bio                 string `json:"bio"`
+	Gender              string `json:"gender"`
+	ProfilePicExtension string `json:"profile_pic_extension"`
+	LoginProvider       string `json:"login_provider"`
 }
 
 func (u UserCreateUpdateReq) isCreating() bool {
