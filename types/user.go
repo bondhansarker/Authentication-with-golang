@@ -35,6 +35,7 @@ type UserResp struct {
 	Website             string `json:"website"`
 	Bio                 string `json:"bio"`
 	Gender              string `json:"gender"`
+	ProfilePic          string `json:"profile_pic"`
 	ProfilePicExtension string `json:"profile_pic_extension"`
 	Verified            bool   `json:"verified"`
 	LoginProvider       string `json:"login_provider"`
@@ -58,6 +59,7 @@ type UserCreateUpdateReq struct {
 	Website             string `json:"website"`
 	Bio                 string `json:"bio"`
 	Gender              string `json:"gender"`
+	ProfilePic          string `json:"profile_pic"`
 	ProfilePicExtension string `json:"profile_pic_extension"`
 	LoginProvider       string `json:"login_provider"`
 }
