@@ -16,7 +16,7 @@ func GetUser(c echo.Context) error {
 	var user *types.LoggedInUser
 	var err error
 
-	if user, err = usersvc.GetUserFromContext(c); err != nil {
+	if user, err = usersvc.GetUserFromHeader(c); err != nil {
 		log.Error(err)
 		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
 	}
