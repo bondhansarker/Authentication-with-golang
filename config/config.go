@@ -191,7 +191,7 @@ func setDefaultConfig() {
 	}
 
 	config.AppleLogin = &AppleLoginConfig{
-		AppBundleID:           "",
+		AppBundleID:           "com.vivasoft.hink",
 		ApplePublicKeyUrl:     "https://appleid.apple.com/auth/keys",
 		AppleIdUrl:            "https://appleid.apple.com",
 		ApplePublicKeyTimeout: 5,

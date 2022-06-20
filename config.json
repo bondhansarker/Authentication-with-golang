@@ -8,10 +8,10 @@
     "appKey": "395d76cd709d4a52b12ea654b5220ca34bd6c041d352bf65"
   },
   "db": {
-    "host": "mysql",
+    "host": "mysql.mysql",
     "port": "3306",
     "user": "root",
-    "pass": "root",
+    "pass": "r00t",
     "schema": "auth",
     "maxIdleConn": 1,
     "maxOpenConn": 2,
@@ -30,7 +30,7 @@
     "timeout": 3
   },
   "redis": {
-    "host": "redis",
+    "host": "redis.redis",
     "port": "6379",
     "pass": "",
     "db": 1,

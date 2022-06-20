@@ -11,17 +11,13 @@ services:
       - .:/usr/src/app
     environment:
       - CONSUL_URL=consul:8500
-      - CONSUL_PATH=config
+      - CONSUL_PATH=auth
     restart: unless-stopped
     tty: true
     ports:
       - 8080:8080
-    depends_on:
-      - mysql
-      - redis
-    links:
-      - mysql
-      - redis
+    networks:
+      - hink-general
 
   mysql:
     container_name: mysql
@@ -34,6 +30,8 @@ services:
       - 3306:3306
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - hink-general
 
   redis:
     image: redis
@@ -59,3 +57,7 @@ services:
 volumes:
   mysql_data:
   cache_data:
+
+networks:
+  hink-general:
+    external: true
