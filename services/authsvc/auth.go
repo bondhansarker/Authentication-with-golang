@@ -464,15 +464,14 @@ func processAppleLogin(token string) (*types.LoginResp, error) {
 	}
 
 	user, err := usersvc.GetUserByEmail(appleUser.Email)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			req.Email = appleUser.Email
-			req.LoginProvider = consts.LoginProviderApple
 
-			return resp, nil
+	if err != nil && err == gorm.ErrRecordNotFound {
+		req.Email = appleUser.Email
+		req.LoginProvider = consts.LoginProviderApple
+		user, err = usersvc.CreateUserForSocialLogin(req)
+		if err != nil {
+			return nil, err
 		}
-
-		return nil, err
 	}
 
 	if user.LoginProvider != consts.LoginProviderApple {
@@ -484,9 +483,10 @@ func processAppleLogin(token string) (*types.LoginResp, error) {
 		return nil, err
 	}
 
-	resp.AccessToken = loginResp.AccessToken
-	resp.RefreshToken = loginResp.RefreshToken
-	resp.User = loginResp.User
+	respErr := methodutil.CopyStruct(loginResp, &resp)
+	if respErr != nil {
+		return nil, respErr
+	}
 
 	return resp, nil
 }

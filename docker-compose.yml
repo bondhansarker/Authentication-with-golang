@@ -43,6 +43,8 @@ services:
     command: redis-server
     volumes:
       - cache_data:/data
+    networks:
+      - hink-general
 
   consul:
     container_name: consul
@@ -53,6 +55,8 @@ services:
     stdin_open: true
     ports:
       - 8500:8500
+    networks:
+      - hink-general
 
 volumes:
   mysql_data:
