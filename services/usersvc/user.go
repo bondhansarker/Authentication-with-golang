@@ -159,14 +159,19 @@ func GetUserFromHeader(c echo.Context) (*types.LoggedInUser, error) {
 }
 
 func GetUser(id int) (*types.UserResp, error) {
-	user := &types.UserResp{}
-
+	user := &models.User{}
 	if err := conn.Db().Model(&models.User{}).Where("id = ?", id).First(&user).Error; err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	return user, nil
+	var resp *types.UserResp
+	err := methodutil.CopyStruct(user, &resp)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return resp, nil
 }
 
 func DeleteUser(id int) error {

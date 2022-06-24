@@ -39,6 +39,8 @@ type UserResp struct {
 	ProfilePicExtension string `json:"profile_pic_extension"`
 	Verified            bool   `json:"verified"`
 	LoginProvider       string `json:"login_provider"`
+	DownloadCount       int64  `json:"download_count"`
+	UploadCount         int64  `json:"upload_count"`
 }
 
 func (u *UserResp) Cache() {
