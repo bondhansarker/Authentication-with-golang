@@ -63,6 +63,22 @@ func UpdateUser(userData *types.UserCreateUpdateReq) (*types.MinimalUser, error)
 		log.Error(err)
 		return nil, errutil.ErrUserUpdate
 	}
+
+	dbUser, err := GetUserById(user.ID)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if user.UploadCount != 0 {
+		user.UploadCount += dbUser.UploadCount
+		dbUser.UploadCount = user.UploadCount
+	}
+	if user.DownloadCount != 0 {
+		user.DownloadCount += dbUser.DownloadCount
+		dbUser.DownloadCount = user.DownloadCount
+	}
+
 	res := conn.Db().Model(&models.User{}).
 		Where("id = ?", user.ID).
 		Omit("email", "password", "login_provider").
@@ -82,14 +98,8 @@ func UpdateUser(userData *types.UserCreateUpdateReq) (*types.MinimalUser, error)
 		log.Error(err)
 	}
 
-	updatedUser, err := GetUserById(user.ID)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
 	var minimalUser *types.MinimalUser
-	err = methodutil.CopyStruct(updatedUser, &minimalUser)
+	err = methodutil.CopyStruct(dbUser, &minimalUser)
 	if err != nil {
 		log.Error(err)
 		return nil, err
