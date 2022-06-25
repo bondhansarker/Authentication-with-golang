@@ -54,14 +54,15 @@ func UpdateUser(c echo.Context) error {
 			Error: err,
 		})
 	}
-	if err = usersvc.UpdateUser(&req); err != nil {
+	minimalUser, err := usersvc.UpdateUser(&req)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
 		}
 		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusOK, minimalUser)
 }
 
 func ChangePassword(c echo.Context) error {

@@ -57,13 +57,12 @@ func CreateUser(userData *types.UserCreateUpdateReq) error {
 	return nil
 }
 
-func UpdateUser(userData *types.UserCreateUpdateReq) error {
+func UpdateUser(userData *types.UserCreateUpdateReq) (*types.MinimalUser, error) {
 	user, err := getUserModel(userData)
 	if err != nil {
 		log.Error(err)
-		return errutil.ErrUserUpdate
+		return nil, errutil.ErrUserUpdate
 	}
-
 	res := conn.Db().Model(&models.User{}).
 		Where("id = ?", user.ID).
 		Omit("email", "password", "login_provider").
@@ -71,19 +70,31 @@ func UpdateUser(userData *types.UserCreateUpdateReq) error {
 
 	if res.Error != nil {
 		log.Error(err)
-		return errutil.ErrUserUpdate
+		return nil, errutil.ErrUserUpdate
 	}
 
 	if res.RowsAffected == 0 {
 		log.Error(err)
-		return gorm.ErrRecordNotFound
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	if err := refreshUserCache(user.ID); err != nil {
 		log.Error(err)
 	}
 
-	return nil
+	updatedUser, err := GetUserById(user.ID)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	var minimalUser *types.MinimalUser
+	err = methodutil.CopyStruct(updatedUser, &minimalUser)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return minimalUser, nil
 }
 
 func refreshUserCache(userId int) error {

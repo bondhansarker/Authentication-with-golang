@@ -10,12 +10,12 @@ type User struct {
 	UserName            string     `json:"user_name"`
 	Email               string     `json:"email"`
 	Password            *string    `json:"password,omitempty"`
-	Phone               *string    `json:"phone"`
-	Website             *string    `json:"website"`
-	Bio                 *string    `json:"bio"`
-	Gender              *string    `json:"gender"`
-	ProfilePicExtension *string    `json:"profile_pic_extension"`
-	ProfilePic          *string    `json:"profile_pic"`
+	Phone               string     `json:"phone"`
+	Website             string     `json:"website"`
+	Bio                 string     `json:"bio"`
+	Gender              string     `json:"gender"`
+	ProfilePicExtension string     `json:"profile_pic_extension"`
+	ProfilePic          string     `json:"profile_pic"`
 	LoginProvider       string     `json:"login_provider"`
 	Verified            bool       `json:"verified"`
 	DownloadCount       int64      `json:"download_count" `
