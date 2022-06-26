@@ -98,6 +98,12 @@ func UpdateUser(userData *types.UserCreateUpdateReq) (*types.MinimalUser, error)
 		log.Error(err)
 	}
 
+	dbUser, err = GetUserById(user.ID)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	var minimalUser *types.MinimalUser
 	err = methodutil.CopyStruct(dbUser, &minimalUser)
 	if err != nil {
