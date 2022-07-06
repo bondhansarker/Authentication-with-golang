@@ -52,20 +52,29 @@ func (u *UserResp) Cache() {
 }
 
 type UserCreateUpdateReq struct {
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	UserName      string `json:"user_name"`
+	Email         string `json:"email"`
+	Password      string `json:"password"`
+	Phone         string `json:"phone"`
+	Website       string `json:"website"`
+	Bio           string `json:"bio"`
+	Gender        string `json:"gender"`
+	LoginProvider string `json:"login_provider"`
+}
+
+type UserStatUpdateReq struct {
+	ID              int    `json:"id"`
+	DownloadCount   *int64 `json:"download_count" `
+	UploadCount     *int64 `json:"upload_count"`
+	IncrementUpload *bool  `json:"increment_upload"`
+}
+
+type ProfilePicUpdateReq struct {
 	ID                  int     `json:"id"`
-	Name                string  `json:"name"`
-	UserName            string  `json:"user_name"`
-	Email               string  `json:"email"`
-	Password            string  `json:"password"`
-	Phone               string  `json:"phone"`
-	Website             string  `json:"website"`
-	Bio                 string  `json:"bio"`
-	Gender              string  `json:"gender"`
 	ProfilePic          *string `json:"profile_pic"`
 	ProfilePicExtension *string `json:"profile_pic_extension"`
-	LoginProvider       string  `json:"login_provider"`
-	DownloadCount       int64   `json:"download_count" `
-	UploadCount         int64   `json:"upload_count"`
 }
 
 type MinimalUser struct {

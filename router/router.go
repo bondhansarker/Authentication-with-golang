@@ -41,5 +41,7 @@ func registerRoutes(e *echo.Echo) {
 
 	g.GET("/profile", c.GetUser)
 	g.PATCH("/profile", c.UpdateUser)
+	g.PATCH("/profile-pic", c.UpdateProfilePic)
+	g.PATCH("/user-statistics", c.UpdateUserStat)
 
 }

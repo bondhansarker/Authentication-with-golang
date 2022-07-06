@@ -65,6 +65,62 @@ func UpdateUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, minimalUser)
 }
 
+func UpdateProfilePic(c echo.Context) error {
+	var req types.ProfilePicUpdateReq
+	var user *types.LoggedInUser
+	var err error
+
+	if user, err = usersvc.GetUserFromHeader(c); err != nil {
+		log.Error(err)
+		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
+	}
+
+	if err = c.Bind(&req); err != nil {
+		log.Error(err)
+		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+	}
+
+	req.ID = user.ID
+
+	minimalUser, err := usersvc.UpdateProfilePic(&req)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
+		}
+		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+	}
+
+	return c.JSON(http.StatusOK, minimalUser)
+}
+
+func UpdateUserStat(c echo.Context) error {
+	var req types.UserStatUpdateReq
+	var user *types.LoggedInUser
+	var err error
+
+	if user, err = usersvc.GetUserFromHeader(c); err != nil {
+		log.Error(err)
+		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
+	}
+
+	if err = c.Bind(&req); err != nil {
+		log.Error(err)
+		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+	}
+
+	req.ID = user.ID
+
+	minimalUser, err := usersvc.UpdateUserStat(&req)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
+		}
+		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+	}
+
+	return c.JSON(http.StatusOK, minimalUser)
+}
+
 func ChangePassword(c echo.Context) error {
 	loggedInUser, err := usersvc.GetUserFromContext(c)
 	if err != nil {

@@ -70,13 +70,108 @@ func UpdateUser(userData *types.UserCreateUpdateReq) (*types.MinimalUser, error)
 		return nil, err
 	}
 
-	if user.UploadCount != 0 {
-		user.UploadCount += dbUser.UploadCount
-		dbUser.UploadCount = user.UploadCount
+	res := conn.Db().Model(&models.User{}).
+		Where("id = ?", user.ID).
+		Omit("email", "password", "login_provider").
+		Updates(&user)
+
+	if res.Error != nil {
+		log.Error(err)
+		return nil, errutil.ErrUserUpdate
 	}
+
+	if res.RowsAffected == 0 {
+		log.Error(err)
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	if err := refreshUserCache(user.ID); err != nil {
+		log.Error(err)
+	}
+
+	dbUser, err = GetUserById(user.ID)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	var minimalUser *types.MinimalUser
+	err = methodutil.CopyStruct(dbUser, &minimalUser)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return minimalUser, nil
+}
+
+func UpdateProfilePic(profilePicData *types.ProfilePicUpdateReq) (*types.MinimalUser, error) {
+	user := &models.User{}
+	respErr := methodutil.CopyStruct(profilePicData, &user)
+	if respErr != nil {
+		return nil, respErr
+	}
+	dbUser, err := GetUserById(user.ID)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	res := conn.Db().Model(&models.User{}).
+		Where("id = ?", user.ID).
+		Omit("email", "password", "login_provider").
+		Updates(&user)
+
+	if res.Error != nil {
+		log.Error(err)
+		return nil, errutil.ErrUserUpdate
+	}
+
+	if res.RowsAffected == 0 {
+		log.Error(err)
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	if err := refreshUserCache(user.ID); err != nil {
+		log.Error(err)
+	}
+
+	dbUser, err = GetUserById(user.ID)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	var minimalUser *types.MinimalUser
+	err = methodutil.CopyStruct(dbUser, &minimalUser)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return minimalUser, nil
+}
+
+func UpdateUserStat(userStat *types.UserStatUpdateReq) (*types.MinimalUser, error) {
+	user := &models.User{}
+	respErr := methodutil.CopyStruct(userStat, &user)
+	if respErr != nil {
+		return nil, respErr
+	}
+	dbUser, err := GetUserById(user.ID)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if user.UploadCount != 0 {
+		if *userStat.IncrementUpload {
+			user.UploadCount = dbUser.UploadCount + user.UploadCount
+		} else {
+			user.UploadCount = dbUser.UploadCount - user.UploadCount
+		}
+	}
+
 	if user.DownloadCount != 0 {
 		user.DownloadCount += dbUser.DownloadCount
-		dbUser.DownloadCount = user.DownloadCount
 	}
 
 	res := conn.Db().Model(&models.User{}).
