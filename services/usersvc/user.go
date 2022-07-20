@@ -170,10 +170,6 @@ func UpdateUserStat(userStat *types.UserStatUpdateReq) (*types.MinimalUser, erro
 		}
 	}
 
-	if user.DownloadCount != 0 {
-		user.DownloadCount += dbUser.DownloadCount
-	}
-
 	res := conn.Db().Model(&models.User{}).
 		Where("id = ?", user.ID).
 		Omit("email", "password", "login_provider").
