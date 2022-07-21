@@ -44,4 +44,7 @@ func registerRoutes(e *echo.Echo) {
 	g.PATCH("/profile-pic", c.UpdateProfilePic)
 	g.PATCH("/user-statistics", c.UpdateUserStat)
 
+	// Admin Routes
+	g.GET("/users", c.GetUsers)
+
 }

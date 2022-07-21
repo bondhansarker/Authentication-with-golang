@@ -1,6 +1,7 @@
 package usersvc
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -289,6 +290,35 @@ func GetUser(id int) (*types.UserResp, error) {
 		log.Error(err)
 		return nil, err
 	}
+	return resp, nil
+}
+
+func GetUsers(pagination *types.Pagination) ([]*types.UserResp, error) {
+	var users []*models.User
+	var totalRows int64 = 0
+	tableName := "users"
+	stmt := GenerateFilteringCondition(conn.Db(), tableName, pagination, false)
+	res := stmt.Find(&users)
+	if res.Error == gorm.ErrRecordNotFound {
+		log.Error("no users found")
+	}
+	if res.Error != nil {
+		return nil, errors.New(res.Error.Error())
+	}
+	var resp []*types.UserResp
+	err := methodutil.CopyStruct(users, &resp)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	stmt = GenerateFilteringCondition(conn.Db(), tableName, pagination, false)
+	errCount := stmt.Model(&models.User{}).Count(&totalRows).Error
+	if errCount != nil {
+		log.Error("error occurred when getting total events", errCount)
+	}
+	pagination.TotalRows = totalRows
+	totalPages := CalculateTotalPageAndRows(pagination, totalRows)
+	pagination.TotalPages = totalPages
 	return resp, nil
 }
 

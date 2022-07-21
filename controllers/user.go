@@ -32,6 +32,23 @@ func GetUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
+func GetUsers(c echo.Context) error {
+	if _, err := usersvc.GetUserFromHeader(c); err != nil {
+		log.Error(err)
+		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
+	}
+	pagination := GeneratePaginationRequest(c)
+	res, err := usersvc.GetUsers(pagination)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
+		}
+		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
 func UpdateUser(c echo.Context) error {
 	var req types.UserCreateUpdateReq
 	var user *types.LoggedInUser

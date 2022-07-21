@@ -13,6 +13,9 @@ import (
 type AppConfig struct {
 	Name           string
 	Port           string
+	Page           int64
+	Limit          int64
+	Sort           string
 	MockOtpEnabled bool
 	MockOtp        string
 	GoogleApiKey   string
@@ -144,6 +147,9 @@ func setDefaultConfig() {
 	config.App = &AppConfig{
 		Name:           "auth",
 		Port:           "8080",
+		Page:           1,
+		Limit:          10,
+		Sort:           "created_at",
 		MockOtpEnabled: true,
 		MockOtp:        "",
 		GoogleApiKey:   "419662912672-uh565e54cgnmbve60bubsi0dqbdtpnia.apps.googleusercontent.com",
@@ -151,10 +157,10 @@ func setDefaultConfig() {
 	}
 
 	config.Db = &DbConfig{
-		Host:            "mysql",
-		Port:            "3306",
+		Host:            "localhost",
+		Port:            "3307",
 		User:            "root",
-		Pass:            "root",
+		Pass:            "r00t",
 		Schema:          "auth",
 		MaxIdleConn:     1,
 		MaxOpenConn:     2,
@@ -171,7 +177,7 @@ func setDefaultConfig() {
 	}
 
 	config.Redis = &RedisConfig{
-		Host:              "redis",
+		Host:              "localhost",
 		Port:              "6379",
 		Pass:              "",
 		Db:                1,
