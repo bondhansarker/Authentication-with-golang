@@ -293,33 +293,35 @@ func GetUser(id int) (*types.UserResp, error) {
 	return resp, nil
 }
 
-func GetUsers(pagination *types.Pagination) ([]*types.UserResp, error) {
+func GetUsers(pagination *types.Pagination) error {
 	var users []*models.User
-	var totalRows int64 = 0
 	tableName := "users"
 	stmt := GenerateFilteringCondition(conn.Db(), tableName, pagination, false)
 	res := stmt.Find(&users)
 	if res.Error == gorm.ErrRecordNotFound {
-		log.Error("no users found")
+		log.Error(res.Error)
+		return errors.New("no users found")
 	}
 	if res.Error != nil {
-		return nil, errors.New(res.Error.Error())
+		log.Error(res.Error)
+		return errors.New("failed to fetch the users")
 	}
-	var resp []*types.UserResp
-	err := methodutil.CopyStruct(users, &resp)
+	var usersResp []*types.UserResp
+	err := methodutil.CopyStruct(users, &usersResp)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return errors.New("failed to copy the structs")
 	}
-	stmt = GenerateFilteringCondition(conn.Db(), tableName, pagination, false)
-	errCount := stmt.Model(&models.User{}).Count(&totalRows).Error
-	if errCount != nil {
-		log.Error("error occurred when getting total events", errCount)
+	stmt = GenerateFilteringCondition(conn.Db(), tableName, pagination, true)
+	var totalRows int64 = 0
+	if errCount := stmt.Model(&models.User{}).Count(&totalRows).Error; errCount != nil {
+		log.Error("error occurred when getting total users", errCount)
 	}
 	pagination.TotalRows = totalRows
 	totalPages := CalculateTotalPageAndRows(pagination, totalRows)
 	pagination.TotalPages = totalPages
-	return resp, nil
+	pagination.Rows = usersResp
+	return nil
 }
 
 func DeleteUser(id int) error {

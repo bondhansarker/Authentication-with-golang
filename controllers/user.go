@@ -7,6 +7,7 @@ import (
 	"auth/services/usersvc"
 	"auth/types"
 	"auth/utils/errutil"
+	"auth/utils/methodutil"
 	"auth/utils/msgutil"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -38,15 +39,19 @@ func GetUsers(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
 	}
 	pagination := GeneratePaginationRequest(c)
-	res, err := usersvc.GetUsers(pagination)
+	err := usersvc.GetUsers(pagination)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
 		}
 		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
 	}
-
-	return c.JSON(http.StatusOK, res)
+	resp := types.PaginationResp{}
+	if err = methodutil.CopyStruct(pagination, &resp); err != nil {
+		log.Error(err)
+		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+	}
+	return c.JSON(http.StatusOK, resp)
 }
 
 func UpdateUser(c echo.Context) error {
