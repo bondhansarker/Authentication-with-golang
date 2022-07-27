@@ -278,16 +278,12 @@ func GetUserFromHeader(c echo.Context) (*types.LoggedInUser, error) {
 }
 
 func IsAdmin(c echo.Context) (bool, error) {
-	user, err := GetUserFromHeader(c)
+	user, err := GetUserFromContext(c)
 	if err != nil {
 		log.Error(err)
 		return false, err
 	}
-	res, err := GetUser(user.ID)
-	if err != nil {
-		return false, err
-	}
-	if res.IsAdmin == nil || *res.IsAdmin == false {
+	if user.IsAdmin == nil || *user.IsAdmin == false {
 		log.Error("this is not an admin")
 		return false, nil
 	}

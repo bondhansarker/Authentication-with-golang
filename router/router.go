@@ -45,8 +45,8 @@ func registerRoutes(e *echo.Echo) {
 	g.PATCH("/user-statistics", c.UpdateUserStat)
 
 	// Admin Routes
-	g.GET("/users", c.Users)
-	g.GET("/users/:id", c.User)
-	g.PATCH("/users/:id", c.Update)
+	g.GET("/users", c.Users, m.Auth())
+	g.GET("/users/:id", c.User, m.Auth())
+	g.PATCH("/users/:id", c.Update, m.Auth())
 
 }

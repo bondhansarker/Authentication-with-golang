@@ -28,7 +28,8 @@ func Signup(c echo.Context) error {
 
 	if err = req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Message: msgutil.ValidationErrorMsg(),
+			Error:   err,
 		})
 	}
 
@@ -52,7 +53,8 @@ func Login(c echo.Context) error {
 
 	if err = cred.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Message: msgutil.ValidationErrorMsg(),
+			Error:   err,
 		})
 	}
 
@@ -106,7 +108,8 @@ func SocialLogin(c echo.Context) error {
 
 	if err = req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Message: msgutil.ValidationErrorMsg(),
+			Error:   err,
 		})
 	}
 

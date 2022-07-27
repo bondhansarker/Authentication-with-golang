@@ -13,6 +13,7 @@ import (
 	"auth/services/redissvc"
 	"auth/utils/errutil"
 	"auth/utils/methodutil"
+	"gorm.io/gorm"
 
 	"github.com/dgrijalva/jwt-go"
 
@@ -24,6 +25,7 @@ type LoggedInUser struct {
 	ID          int    `json:"user_id"`
 	AccessUuid  string `json:"access_uuid"`
 	RefreshUuid string `json:"refresh_uuid"`
+	IsAdmin     *bool  `json:"is_admin"`
 }
 
 type UserResp struct {
@@ -139,9 +141,12 @@ func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 
 	user := &models.User{}
 	userName := strings.ToLower(u.UserName)
-
-	res := conn.Db().Where("email = ? OR user_name = ?", u.Email, userName).Find(&user)
-
+	var res *gorm.DB
+	if userName != "" {
+		res = conn.Db().Where("email = ? OR user_name = ?", u.Email, userName).Find(&user)
+	} else {
+		res = conn.Db().Where("email = ?", u.Email).Find(&user)
+	}
 	if res.RowsAffected > 0 {
 		if user.ID != u.ID {
 			if value == "email" && user.Email == u.Email {

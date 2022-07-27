@@ -1,16 +1,17 @@
 package middlewares
 
 import (
-	conf "auth/config"
-	"auth/log"
-	"auth/services/redissvc"
-	"auth/types"
-	"auth/utils/methodutil"
 	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+
+	conf "auth/config"
+	"auth/log"
+	"auth/services/redissvc"
+	"auth/types"
+	"auth/utils/methodutil"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
@@ -246,6 +247,7 @@ func JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
 				ID:          user.ID,
 				AccessUuid:  tokenDetails.AccessUuid,
 				RefreshUuid: tokenDetails.RefreshUuid,
+				IsAdmin:     user.IsAdmin,
 			})
 
 			return next(c)
