@@ -1,15 +1,18 @@
 package methodutil
 
 import (
-	"auth/log"
-	"auth/utils/errutil"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"auth/log"
+	"auth/utils/errutil"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
@@ -44,6 +47,14 @@ func InArray(needle interface{}, haystack interface{}) bool {
 	}
 
 	return false
+}
+
+func ParseParam(c echo.Context, paramName string) (string, error) {
+	param := c.Param(paramName)
+	if param == "" {
+		return "", errors.New(fmt.Sprintf("%v: No parameter found", paramName))
+	}
+	return param, nil
 }
 
 func AccessTokenFromHeader(c echo.Context) (string, error) {

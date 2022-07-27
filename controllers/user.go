@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"auth/log"
 	"auth/services/usersvc"
@@ -19,7 +20,7 @@ func GetUser(c echo.Context) error {
 
 	if user, err = usersvc.GetUserFromHeader(c); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
+		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
 	}
 
 	res, err := usersvc.GetUser(user.ID)
@@ -33,7 +34,36 @@ func GetUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func GetUsers(c echo.Context) error {
+func User(c echo.Context) error {
+	var err error
+	if _, err = usersvc.GetUserFromHeader(c); err != nil {
+		log.Error(err)
+		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
+	}
+
+	id, parseErr := methodutil.ParseParam(c, "id")
+	if parseErr != nil {
+		log.Error(parseErr)
+		return c.JSON(http.StatusBadRequest, parseErr)
+	}
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		log.Error(parseErr)
+		return c.JSON(http.StatusBadRequest, parseErr)
+	}
+
+	res, err := usersvc.GetUser(userId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
+		}
+		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
+func Users(c echo.Context) error {
 	if _, err := usersvc.GetUserFromHeader(c); err != nil {
 		log.Error(err)
 		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
@@ -70,6 +100,50 @@ func UpdateUser(c echo.Context) error {
 	}
 
 	req.ID = user.ID
+	req.Verified = nil
+
+	if err = req.Validate(); err != nil {
+		return c.JSON(http.StatusBadRequest, &types.ValidationError{
+			Error: err,
+		})
+	}
+	minimalUser, err := usersvc.UpdateUser(&req)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
+		}
+		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+	}
+
+	return c.JSON(http.StatusOK, minimalUser)
+}
+
+func Update(c echo.Context) error {
+	var req types.UserCreateUpdateReq
+	var err error
+
+	if _, err = usersvc.GetUserFromHeader(c); err != nil {
+		log.Error(err)
+		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
+	}
+
+	if err = c.Bind(&req); err != nil {
+		log.Error(err)
+		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+	}
+
+	id, parseErr := methodutil.ParseParam(c, "id")
+	if parseErr != nil {
+		log.Error(parseErr)
+		return c.JSON(http.StatusBadRequest, parseErr)
+	}
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		log.Error(parseErr)
+		return c.JSON(http.StatusBadRequest, parseErr)
+	}
+
+	req.ID = userId
 
 	if err = req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
