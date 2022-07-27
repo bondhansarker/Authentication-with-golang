@@ -18,15 +18,15 @@ type Pagination struct {
 }
 
 type PaginationResp struct {
-	Limit      int64       `json:"limit"`
-	Page       int64       `json:"page"`
-	TotalRows  int64       `json:"total_rows"`
-	TotalPages int64       `json:"total_pages"`
-	FromRow    int64       `json:"from_row"`
-	ToRow      int64       `json:"to_row"`
-	Rows       interface{} `json:"rows"`
-	// QueryString string      `json:"qs"`
-	// Searches    []Search    `json:"searches"`
+	Limit       int64       `json:"limit"`
+	Page        int64       `json:"page"`
+	TotalRows   int64       `json:"total_rows"`
+	TotalPages  int64       `json:"total_pages"`
+	FromRow     int64       `json:"from_row"`
+	ToRow       int64       `json:"to_row"`
+	Rows        interface{} `json:"rows"`
+	QueryString string      `json:"qs"`
+	Searches    []Search    `json:"searches"`
 }
 
 type Search struct {
