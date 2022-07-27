@@ -26,31 +26,31 @@ func (m Msg) Done() Data {
 }
 
 func RequestBodyParseErrorResponseMsg() Data {
-	return NewMessage().Set("message", "Failed to parse request body").Done()
+	return NewMessage().Set("message", "failed to parse request body").Done()
 }
 
 func InvalidUserPassMsg() Data {
-	return NewMessage().Set("message", "Invalid username or password").Done()
+	return NewMessage().Set("message", "invalid username or password").Done()
 }
 
 func JwtCreateErrorMsg() Data {
-	return NewMessage().Set("message", "Failed to create JWT token").Done()
+	return NewMessage().Set("message", "failed to create JWT token").Done()
 }
 
 func JwtStoreErrorMsg() Data {
-	return NewMessage().Set("message", "Failed to store JWT token uuid").Done()
+	return NewMessage().Set("message", "failed to store JWT token uuid").Done()
 }
 
 func LogoutSuccessMsg() Data {
-	return NewMessage().Set("message", "Successfully logged out").Done()
+	return NewMessage().Set("message", "successfully logged out").Done()
 }
 
 func LogoutFailedMsg() Data {
-	return NewMessage().Set("message", "Failed to logout").Done()
+	return NewMessage().Set("message", "failed to logout").Done()
 }
 
 func EntityCreationFailedMsg(entity string) Data {
-	return NewMessage().Set("message", fmt.Sprintf("Failed to create %s", entity)).Done()
+	return NewMessage().Set("message", fmt.Sprintf("failed to create %s", entity)).Done()
 }
 
 func EntityNotFoundMsg(entity string) Data {
@@ -66,59 +66,59 @@ func EntityDeleteSuccessMsg(entity string) Data {
 }
 
 func SomethingWentWrongMsg() Data {
-	return NewMessage().Set("message", "Something went wrong").Done()
+	return NewMessage().Set("message", "something went wrong").Done()
 }
 
 func NoLoggedInUserMsg() Data {
-	return NewMessage().Set("message", "No logged-in user found").Done()
+	return NewMessage().Set("message", "no logged-in user found").Done()
 }
 
 func InvalidTokenMsg(tokenType string) Data {
-	return NewMessage().Set("message", fmt.Sprintf("Invalid %s", tokenType)).Done()
+	return NewMessage().Set("message", fmt.Sprintf("invalid %s", tokenType)).Done()
 }
 
 func RefreshTokenCreateErrorMsg() Data {
-	return NewMessage().Set("message", "Failed to create new JWT token").Done()
+	return NewMessage().Set("message", "failed to create new JWT token").Done()
 }
 
 func AccessForbiddenMsg() Data {
-	return NewMessage().Set("message", "Access forbidden").Done()
+	return NewMessage().Set("message", "access forbidden").Done()
 }
 
 func ChangePasswordSuccessMsg() Data {
-	return NewMessage().Set("message", "Password changed successfully").Done()
+	return NewMessage().Set("message", "password changed successfully").Done()
 }
 
 func ForgotPasswordMsg() Data {
-	return NewMessage().Set("message", "Password reset link sent to email").Done()
+	return NewMessage().Set("message", "password reset link sent to email").Done()
 }
 
 func ForgotPasswordWithOtpMsg(email string) string {
-	return fmt.Sprintf("OTP(One Time Password) for Password reset sent to the email %s if it is associated with Hink account.", email)
+	return fmt.Sprintf("otp(One Time Password) for Password reset sent to the email %s if it is associated with Hink account.", email)
 }
 
 func SamePasswordErrorMsg() Data {
-	return NewMessage().Set("message", "Password can't be same as old one").Done()
+	return NewMessage().Set("message", "password can't be same as old one").Done()
 }
 
 func VerifyResetPasswordMsg() Data {
-	return NewMessage().Set("message", "Reset token & otp verified").Done()
+	return NewMessage().Set("message", "reset token & otp verified").Done()
 }
 
 func MailSendingFailedMsg(mailType string) Data {
-	return NewMessage().Set("message", fmt.Sprintf("Failed to send %s email", mailType)).Done()
+	return NewMessage().Set("message", fmt.Sprintf("failed to send %s email", mailType)).Done()
 }
 
 func PasswordResetSuccessMsg() Data {
-	return NewMessage().Set("message", "Password reset success").Done()
+	return NewMessage().Set("message", "password reset success").Done()
 }
 
 func LoggedInUserDeleteMsg() Data {
-	return NewMessage().Set("message", "Cannot delete self").Done()
+	return NewMessage().Set("message", "cannot delete self").Done()
 }
 
 func InvalidOldPasswordMsg() Data {
-	return NewMessage().Set("message", "Old password didn't match").Done()
+	return NewMessage().Set("message", "old password didn't match").Done()
 }
 
 func InvalidLoginAttemptMsg(provider string) Data {
@@ -126,17 +126,17 @@ func InvalidLoginAttemptMsg(provider string) Data {
 }
 
 func UserAlreadyRegisteredMsg() Data {
-	return NewMessage().Set("message", "User already registered.").Done()
+	return NewMessage().Set("message", "user already registered.").Done()
 }
 
 func UserAlreadyRegisteredViaSocialMsg(platform string) Data {
-	return NewMessage().Set("message", fmt.Sprintf("User already registered via %s", platform)).Done()
+	return NewMessage().Set("message", fmt.Sprintf("user already registered via %s", platform)).Done()
 }
 
 func InvalidLoginTokenMsg() Data {
-	return NewMessage().Set("message", "Invalid login token.").Done()
+	return NewMessage().Set("message", "invalid login token.").Done()
 }
 
 func SocialLoginFailedMsg() Data {
-	return NewMessage().Set("message", "Failed social login.").Done()
+	return NewMessage().Set("message", "failed social login.").Done()
 }

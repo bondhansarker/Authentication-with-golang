@@ -104,7 +104,8 @@ func UpdateUser(c echo.Context) error {
 
 	if err = req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Message: "failed to validate fields",
+			Error:   err,
 		})
 	}
 	minimalUser, err := usersvc.UpdateUser(&req)
@@ -124,7 +125,7 @@ func Update(c echo.Context) error {
 
 	if _, err = usersvc.GetUserFromHeader(c); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
+		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
 	}
 
 	if err = c.Bind(&req); err != nil {
@@ -147,7 +148,8 @@ func Update(c echo.Context) error {
 
 	if err = req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Error:   err,
+			Message: "failed to validate fields",
 		})
 	}
 	minimalUser, err := usersvc.UpdateUser(&req)
@@ -233,7 +235,8 @@ func ChangePassword(c echo.Context) error {
 
 	if err = body.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Message: "failed to validate fields",
+			Error:   err,
 		})
 	}
 
@@ -263,7 +266,8 @@ func ForgotPassword(c echo.Context) error {
 
 	if err := body.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Message: "failed to validate fields",
+			Error:   err,
 		})
 	}
 
@@ -288,7 +292,8 @@ func VerifyResetPassword(c echo.Context) error {
 
 	if err := req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Message: "failed to validate fields",
+			Error:   err,
 		})
 	}
 
@@ -321,7 +326,8 @@ func ResendForgotPasswordOtp(c echo.Context) error {
 
 	if err := req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Message: "failed to validate fields",
+			Error:   err,
 		})
 	}
 
@@ -350,7 +356,8 @@ func ResetPassword(c echo.Context) error {
 
 	if err := req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error: err,
+			Message: "failed to validate fields",
+			Error:   err,
 		})
 	}
 
