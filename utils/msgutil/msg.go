@@ -122,7 +122,7 @@ func InvalidOldPasswordMsg() Data {
 }
 
 func InvalidLoginAttemptMsg(provider string) Data {
-	return NewMessage().Set("message", fmt.Sprintf("Registered via %s", provider)).Done()
+	return NewMessage().Set("message", fmt.Sprintf("registered via %s", provider)).Done()
 }
 
 func UserAlreadyRegisteredMsg() Data {
@@ -139,4 +139,8 @@ func InvalidLoginTokenMsg() Data {
 
 func SocialLoginFailedMsg() Data {
 	return NewMessage().Set("message", "failed social login.").Done()
+}
+
+func ValidationErrorMsg() string {
+	return "failed to validate fields"
 }

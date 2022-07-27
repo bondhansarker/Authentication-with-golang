@@ -104,7 +104,7 @@ func UpdateUser(c echo.Context) error {
 
 	if err = req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: "failed to validate fields",
+			Message: msgutil.ValidationErrorMsg(),
 			Error:   err,
 		})
 	}
@@ -149,7 +149,7 @@ func Update(c echo.Context) error {
 	if err = req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
 			Error:   err,
-			Message: "failed to validate fields",
+			Message: msgutil.ValidationErrorMsg(),
 		})
 	}
 	minimalUser, err := usersvc.UpdateUser(&req)
@@ -235,7 +235,7 @@ func ChangePassword(c echo.Context) error {
 
 	if err = body.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: "failed to validate fields",
+			Message: msgutil.ValidationErrorMsg(),
 			Error:   err,
 		})
 	}
@@ -266,7 +266,7 @@ func ForgotPassword(c echo.Context) error {
 
 	if err := body.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: "failed to validate fields",
+			Message: msgutil.ValidationErrorMsg(),
 			Error:   err,
 		})
 	}
@@ -292,7 +292,7 @@ func VerifyResetPassword(c echo.Context) error {
 
 	if err := req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: "failed to validate fields",
+			Message: msgutil.ValidationErrorMsg(),
 			Error:   err,
 		})
 	}
@@ -326,7 +326,7 @@ func ResendForgotPasswordOtp(c echo.Context) error {
 
 	if err := req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: "failed to validate fields",
+			Message: msgutil.ValidationErrorMsg(),
 			Error:   err,
 		})
 	}
@@ -356,7 +356,7 @@ func ResetPassword(c echo.Context) error {
 
 	if err := req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: "failed to validate fields",
+			Message: msgutil.ValidationErrorMsg(),
 			Error:   err,
 		})
 	}
