@@ -296,6 +296,7 @@ func GetUser(id int) (*types.UserResp, error) {
 func GetUsers(pagination *types.Pagination) error {
 	var users []*models.User
 	tableName := "users"
+	pagination.QueryTargetFields = []string{"name", "user_name", "email"}
 	stmt := GenerateFilteringCondition(conn.Db(), tableName, pagination, false)
 	res := stmt.Find(&users)
 	if res.Error == gorm.ErrRecordNotFound {

@@ -30,7 +30,7 @@ func GeneratePaginationRequest(c echo.Context) *serializers.Pagination {
 			page, _ = strconv.ParseInt(queryValue, 10, 64)
 		case "sort":
 			sort = queryValue
-		case "qs":
+		case "search":
 			searchString = queryValue
 		}
 

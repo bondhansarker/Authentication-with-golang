@@ -56,6 +56,16 @@ func GenerateFilteringCondition(r *gorm.DB, tableName string, pagination *serial
 	} else {
 		find = r
 	}
+
+	queryString := pagination.QueryString
+	if queryString != "" {
+		queryString = "%" + queryString + "%"
+		for _, field := range pagination.QueryTargetFields {
+			searchQuery := fmt.Sprintf("%s LIKE ?", field)
+			find = find.Or(searchQuery, queryString)
+		}
+	}
+
 	// generate where query
 	searches := pagination.Searches
 
