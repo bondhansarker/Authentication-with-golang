@@ -18,6 +18,7 @@ type User struct {
 	ProfilePic          *string    `json:"profile_pic"`
 	LoginProvider       string     `json:"login_provider"`
 	Verified            *bool      `json:"verified"`
+	IsAdmin             *bool      `json:"is_admin"`
 	DownloadCount       int64      `json:"download_count" `
 	UploadCount         int64      `json:"upload_count"`
 	CreatedAt           time.Time  `json:"created_at"`

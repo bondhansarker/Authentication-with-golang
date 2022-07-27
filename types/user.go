@@ -37,9 +37,9 @@ type UserResp struct {
 	Gender              string  `json:"gender"`
 	ProfilePic          *string `json:"profile_pic"`
 	ProfilePicExtension *string `json:"profile_pic_extension"`
-	Verified            bool    `json:"verified"`
+	Verified            *bool   `json:"verified"`
+	IsAdmin             *bool   `json:"is_admin"`
 	LoginProvider       string  `json:"login_provider"`
-	DownloadCount       int64   `json:"download_count"`
 	UploadCount         int64   `json:"upload_count"`
 }
 

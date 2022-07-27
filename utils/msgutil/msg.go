@@ -73,6 +73,10 @@ func NoLoggedInUserMsg() Data {
 	return NewMessage().Set("message", "no logged-in user found").Done()
 }
 
+func NoAccessMsg() Data {
+	return NewMessage().Set("message", "access denied for this user").Done()
+}
+
 func InvalidTokenMsg(tokenType string) Data {
 	return NewMessage().Set("message", fmt.Sprintf("invalid %s", tokenType)).Done()
 }

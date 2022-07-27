@@ -277,6 +277,23 @@ func GetUserFromHeader(c echo.Context) (*types.LoggedInUser, error) {
 	return currentUser, nil
 }
 
+func IsAdmin(c echo.Context) (bool, error) {
+	user, err := GetUserFromHeader(c)
+	if err != nil {
+		log.Error(err)
+		return false, err
+	}
+	res, err := GetUser(user.ID)
+	if err != nil {
+		return false, err
+	}
+	if res.IsAdmin == nil || *res.IsAdmin == false {
+		log.Error("this is not an admin")
+		return false, nil
+	}
+	return true, nil
+}
+
 func GetUser(id int) (*types.UserResp, error) {
 	user := &models.User{}
 	if err := conn.Db().Model(&models.User{}).Where("id = ?", id).First(&user).Error; err != nil {

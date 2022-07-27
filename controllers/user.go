@@ -35,10 +35,13 @@ func GetUser(c echo.Context) error {
 }
 
 func User(c echo.Context) error {
-	var err error
-	if _, err = usersvc.GetUserFromHeader(c); err != nil {
+	isAdmin, err := usersvc.IsAdmin(c)
+	if err != nil {
 		log.Error(err)
 		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
+	}
+	if isAdmin != true {
+		return c.JSON(http.StatusForbidden, msgutil.NoAccessMsg())
 	}
 
 	id, parseErr := methodutil.ParseParam(c, "id")
@@ -64,12 +67,16 @@ func User(c echo.Context) error {
 }
 
 func Users(c echo.Context) error {
-	if _, err := usersvc.GetUserFromHeader(c); err != nil {
+	isAdmin, err := usersvc.IsAdmin(c)
+	if err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
+		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
+	}
+	if isAdmin != true {
+		return c.JSON(http.StatusForbidden, msgutil.NoAccessMsg())
 	}
 	pagination := GeneratePaginationRequest(c)
-	err := usersvc.GetUsers(pagination)
+	err = usersvc.GetUsers(pagination)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
@@ -121,11 +128,13 @@ func UpdateUser(c echo.Context) error {
 
 func Update(c echo.Context) error {
 	var req types.UserCreateUpdateReq
-	var err error
-
-	if _, err = usersvc.GetUserFromHeader(c); err != nil {
+	isAdmin, err := usersvc.IsAdmin(c)
+	if err != nil {
 		log.Error(err)
 		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
+	}
+	if isAdmin != true {
+		return c.JSON(http.StatusForbidden, msgutil.NoAccessMsg())
 	}
 
 	if err = c.Bind(&req); err != nil {

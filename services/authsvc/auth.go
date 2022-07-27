@@ -1,6 +1,18 @@
 package authsvc
 
 import (
+	"context"
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"auth/clients"
 	"auth/config"
 	"auth/consts"
@@ -13,17 +25,6 @@ import (
 	"auth/utils/applekeyutil"
 	"auth/utils/errutil"
 	"auth/utils/methodutil"
-	"context"
-	"crypto"
-	"crypto/rsa"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"net/http"
-	"strconv"
-	"strings"
 
 	"gorm.io/gorm"
 
@@ -99,7 +100,7 @@ func login(userId int, isAfterOtpVerification bool) (*types.LoginResp, error) {
 			}
 		}(user.Email)
 
-		user.Verified = true
+		*user.Verified = true
 		user.Cache()
 	}
 
