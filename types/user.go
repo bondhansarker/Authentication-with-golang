@@ -61,6 +61,7 @@ type UserCreateUpdateReq struct {
 	Website       string `json:"website"`
 	Bio           string `json:"bio"`
 	Gender        string `json:"gender"`
+	Verified      *bool  `json:"verified"`
 	LoginProvider string `json:"login_provider"`
 }
 
@@ -91,6 +92,7 @@ type MinimalUser struct {
 	LoginProvider       string  `json:"login_provider"`
 	DownloadCount       int64   `json:"download_count" `
 	UploadCount         int64   `json:"upload_count"`
+	Verified            bool    `json:"verified"`
 }
 
 func (u UserCreateUpdateReq) isCreating() bool {

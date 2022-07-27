@@ -469,7 +469,7 @@ func CreateUserForSocialLogin(userData *types.SocialLoginData) (*models.User, er
 	if respErr != nil {
 		return nil, respErr
 	}
-	user.Verified = true
+	*user.Verified = true
 
 	if err := conn.Db().Create(&user).Error; err != nil {
 		log.Error(err)

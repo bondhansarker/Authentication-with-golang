@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"net/http"
+
 	"auth/log"
 	"auth/services/authsvc"
 	"auth/services/usersvc"
@@ -8,7 +10,6 @@ import (
 	"auth/utils/errutil"
 	"auth/utils/methodutil"
 	"auth/utils/msgutil"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
@@ -23,6 +24,8 @@ func Signup(c echo.Context) error {
 	}
 
 	req.ID = 0 // remove `id`(if provided somehow) while creation
+	req.Verified = nil
+
 	if err = req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
 			Error: err,
