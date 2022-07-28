@@ -247,7 +247,7 @@ func JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
 				ID:          user.ID,
 				AccessUuid:  tokenDetails.AccessUuid,
 				RefreshUuid: tokenDetails.RefreshUuid,
-				IsAdmin:     user.IsAdmin,
+				IsAdmin:     &user.IsAdmin,
 			})
 
 			return next(c)

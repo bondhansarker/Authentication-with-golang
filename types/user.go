@@ -29,20 +29,21 @@ type LoggedInUser struct {
 }
 
 type UserResp struct {
-	ID                  int     `json:"id"`
-	Name                string  `json:"name"`
-	UserName            string  `json:"user_name"`
-	Email               string  `json:"email"`
-	Phone               string  `json:"phone"`
-	Website             string  `json:"website"`
-	Bio                 string  `json:"bio"`
-	Gender              string  `json:"gender"`
-	ProfilePic          *string `json:"profile_pic"`
-	ProfilePicExtension *string `json:"profile_pic_extension"`
-	Verified            *bool   `json:"verified"`
-	IsAdmin             *bool   `json:"is_admin"`
-	LoginProvider       string  `json:"login_provider"`
-	UploadCount         int64   `json:"upload_count"`
+	ID                  int    `json:"id"`
+	Name                string `json:"name"`
+	UserName            string `json:"user_name"`
+	Email               string `json:"email"`
+	Phone               string `json:"phone"`
+	Website             string `json:"website"`
+	Bio                 string `json:"bio"`
+	Gender              string `json:"gender"`
+	ProfilePic          string `json:"profile_pic"`
+	ProfilePicExtension string `json:"profile_pic_extension"`
+	Verified            bool   `json:"verified"`
+	IsAdmin             bool   `json:"is_admin"`
+	LoginProvider       string `json:"login_provider"`
+	UploadCount         int64  `json:"upload_count"`
+	DownloadCount       int64  `json:"download_count"`
 }
 
 func (u *UserResp) Cache() {
@@ -81,20 +82,20 @@ type ProfilePicUpdateReq struct {
 }
 
 type MinimalUser struct {
-	ID                  int     `json:"id"`
-	Name                string  `json:"name"`
-	UserName            string  `json:"user_name"`
-	Email               string  `json:"email"`
-	Phone               string  `json:"phone"`
-	Website             string  `json:"website"`
-	Bio                 string  `json:"bio"`
-	Gender              string  `json:"gender"`
-	ProfilePic          *string `json:"profile_pic"`
-	ProfilePicExtension *string `json:"profile_pic_extension"`
-	LoginProvider       string  `json:"login_provider"`
-	DownloadCount       int64   `json:"download_count" `
-	UploadCount         int64   `json:"upload_count"`
-	Verified            bool    `json:"verified"`
+	ID                  int    `json:"id"`
+	Name                string `json:"name"`
+	UserName            string `json:"user_name"`
+	Email               string `json:"email"`
+	Phone               string `json:"phone"`
+	Website             string `json:"website"`
+	Bio                 string `json:"bio"`
+	Gender              string `json:"gender"`
+	ProfilePic          string `json:"profile_pic"`
+	ProfilePicExtension string `json:"profile_pic_extension"`
+	LoginProvider       string `json:"login_provider"`
+	DownloadCount       int64  `json:"download_count"`
+	UploadCount         int64  `json:"upload_count"`
+	Verified            bool   `json:"verified"`
 }
 
 func (u UserCreateUpdateReq) isCreating() bool {

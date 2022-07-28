@@ -100,7 +100,7 @@ func login(userId int, isAfterOtpVerification bool) (*types.LoginResp, error) {
 			}
 		}(user.Email)
 
-		*user.Verified = true
+		user.Verified = true
 		user.Cache()
 	}
 
