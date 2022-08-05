@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"auth/log"
@@ -109,7 +110,7 @@ func (ac *AuthController) Logout(c echo.Context) error {
 }
 
 func (ac *AuthController) SocialLogin(c echo.Context) error {
-	var req types.SocialLoginReq
+	var req *types.SocialLoginReq
 	var err error
 
 	if err = c.Bind(&req); err != nil {
@@ -118,13 +119,18 @@ func (ac *AuthController) SocialLogin(c echo.Context) error {
 	}
 
 	if err = req.Validate(); err != nil {
+		log.Error(err.Error())
 		return c.JSON(http.StatusBadRequest, &types.ValidationError{
 			Message: msgutil.ValidationErrorMsg(),
 			Error:   err,
 		})
 	}
 
-	resp, err := ac.authService.SocialLogin(&req)
+	fmt.Println("====================================================")
+	fmt.Println(req.Token, req.LoginProvider)
+	fmt.Println("====================================================")
+
+	resp, err := ac.authService.SocialLogin(req)
 	if err != nil {
 		switch err {
 		case errutil.ErrInvalidLoginToken:

@@ -178,7 +178,7 @@ func (as *AuthService) VerifyToken(accessToken string) (*types.UserResp, error) 
 
 	var userResp *types.UserResp
 
-	if userResp, err = as.userService.GetUserResponse(token.UserID, true); err != nil {
+	if userResp, err = as.userService.GetUserResponse(token.UserID, false); err != nil {
 		return nil, err
 	}
 

@@ -1,10 +1,11 @@
 package types
 
 import (
+	"regexp"
+
 	"auth/consts"
 	"auth/utils/errutil"
 	"auth/utils/methodutil"
-	"regexp"
 
 	v "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -98,7 +99,7 @@ func (rp ResetPasswordReq) Validate() error {
 	)
 }
 
-func (rp *ResetPasswordReq) isValidPasswordFormat(value interface{}) error {
+func (rp ResetPasswordReq) isValidPasswordFormat(value interface{}) error {
 	return methodutil.ValidatePassword(rp.Password)
 }
 
@@ -142,7 +143,7 @@ func (s SocialLoginReq) Validate() error {
 	)
 }
 
-func (s *SocialLoginReq) loginProviderValid(value interface{}) error {
+func (s SocialLoginReq) loginProviderValid(value interface{}) error {
 	loginProviders := consts.LoginProviders()
 
 	if _, ok := loginProviders[s.LoginProvider]; !ok {

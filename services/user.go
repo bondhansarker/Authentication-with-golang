@@ -149,7 +149,7 @@ func (us *UserService) refreshUserCache(userId int) (*types.UserResp, error) {
 func (us *UserService) GetUserByEmail(email string) (*models.User, error) {
 	user, err := us.userRepository.FindBy("email", email)
 	if err != nil {
-		log.Error(err)
+		log.Error(err.Error())
 		return nil, err
 	}
 	return user, nil
@@ -376,17 +376,18 @@ func (us *UserService) ResetPassword(req *types.ResetPasswordReq) error {
 }
 
 func (us *UserService) CreateUserForSocialLogin(userData *types.SocialLoginData) (*models.User, error) {
-	user := &models.User{}
+	user := models.User{}
 	respErr := methodutil.CopyStruct(userData, &user)
 	if respErr != nil {
 		return nil, respErr
 	}
-	*user.Verified = true
-	if err := us.userRepository.Create(user); err != nil {
+	verified := true
+	user.Verified = &verified
+	if err := us.userRepository.Create(&user); err != nil {
 		log.Error(err.Error())
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (us *UserService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPasswordOtpResp, error) {

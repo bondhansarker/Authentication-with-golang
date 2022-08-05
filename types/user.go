@@ -105,7 +105,7 @@ func (u UserCreateUpdateReq) Validate() error {
 	)
 }
 
-func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
+func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	// if !u.isCreating() { // no need to check while doing "update"
 	// 	return nil
 	// }
@@ -131,7 +131,7 @@ func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	return nil
 }
 
-func (u *UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
+func (u UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
 	if !u.isCreating() && !methodutil.IsEmpty(u.Email) {
 		return errutil.ErrEmailUpdateNotAllowed
 	}
@@ -139,7 +139,7 @@ func (u *UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
 	return nil
 }
 
-func (u *UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
+func (u UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
 	if !u.isCreating() && !methodutil.IsEmpty(u.UserName) {
 		return errutil.ErrUserNameUpdateNotAllowed
 	}
@@ -147,7 +147,7 @@ func (u *UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
 	return nil
 }
 
-func (u *UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
+func (u UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
 	if !u.isCreating() && !methodutil.IsEmpty(u.Password) {
 		return errutil.ErrPasswordUpdateNotAllowed
 	}
@@ -155,7 +155,7 @@ func (u *UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
 	return nil
 }
 
-func (u *UserCreateUpdateReq) isValidPasswordFormat(value interface{}) error {
+func (u UserCreateUpdateReq) isValidPasswordFormat(value interface{}) error {
 	if u.isCreating() && u.LoginProvider == consts.LoginProviderHink {
 		return methodutil.ValidatePassword(u.Password)
 	}
@@ -163,7 +163,7 @@ func (u *UserCreateUpdateReq) isValidPasswordFormat(value interface{}) error {
 	return nil
 }
 
-func (u *UserCreateUpdateReq) loginProviderValid(value interface{}) error {
+func (u UserCreateUpdateReq) loginProviderValid(value interface{}) error {
 	if !u.isCreating() {
 		return nil
 	}
@@ -177,7 +177,7 @@ func (u *UserCreateUpdateReq) loginProviderValid(value interface{}) error {
 	return nil
 }
 
-func (u *UserCreateUpdateReq) isPasswordRequired() bool {
+func (u UserCreateUpdateReq) isPasswordRequired() bool {
 	if !u.isCreating() || u.LoginProvider != consts.LoginProviderHink {
 		return false
 	}
