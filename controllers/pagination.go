@@ -10,16 +10,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func GeneratePaginationRequest(c echo.Context) *serializers.Pagination {
+func GeneratePaginationRequest(c *echo.Context, config *config.Config) *serializers.Pagination {
 	// default limit, page & sort parameter
-	limit := config.App().Limit
-	page := config.App().Page
-	sort := config.App().Sort
+	limit := config.App.Limit
+	page := config.App.Page
+	sort := config.App.Sort
 	searchString := ""
 
 	var searches []serializers.Search
 
-	query := c.QueryParams()
+	query := (*c).QueryParams()
 	for key, value := range query {
 		queryValue := value[len(value)-1]
 
@@ -58,17 +58,17 @@ func GeneratePagesPath(c echo.Context, resp *serializers.Pagination) {
 		searchQueryParams += fmt.Sprintf("&%s.%s=%s", search.Column, search.Action, search.Query)
 	}
 
-	// set first & last page pagination response
+	// set first & last page paginationutil response
 	resp.FirstPage = fmt.Sprintf("?limit=%d&page=%d&sort=%s", resp.Limit, 1, resp.Sort) + searchQueryParams
 	resp.LastPage = fmt.Sprintf("?limit=%d&page=%d&sort=%s", resp.Limit, totalPages, resp.Sort) + searchQueryParams
 
 	if resp.Page > 1 {
-		// set previous page pagination response
+		// set previous page paginationutil response
 		resp.PreviousPage = fmt.Sprintf("?limit=%d&page=%d&sort=%s", resp.Limit, resp.Page-1, resp.Sort) + searchQueryParams
 	}
 
 	if resp.Page < totalPages {
-		// set next page pagination response
+		// set next page paginationutil response
 		resp.NextPage = fmt.Sprintf("?limit=%d&page=%d&sort=%s", resp.Limit, resp.Page+1, resp.Sort) + searchQueryParams
 	}
 

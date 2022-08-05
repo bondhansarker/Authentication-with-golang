@@ -7,15 +7,26 @@ import (
 	"strconv"
 	"strings"
 
-	conf "auth/config"
+	"auth/config"
 	"auth/log"
-	"auth/services/redissvc"
+	"auth/repositories"
 	"auth/types"
 	"auth/utils/methodutil"
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 )
+
+type JWTMiddleWare struct {
+	config          *config.Config
+	redisRepository *repositories.RedisRepository
+}
+
+func NewJWTMiddleWare(redisRepository *repositories.RedisRepository) *JWTMiddleWare {
+	return &JWTMiddleWare{
+		config:          config.GetConfig(),
+		redisRepository: redisRepository,
+	}
+}
 
 type (
 	// Skipper defines a function to skip middleware. Returning true skips processing
@@ -127,15 +138,15 @@ func DefaultSkipper(echo.Context) bool {
 //
 // See: https://jwt.io/introduction
 // See `JWTConfig.TokenLookup`
-func JWT(key interface{}) echo.MiddlewareFunc {
+func (jwtObject *JWTMiddleWare) JWT(key interface{}) echo.MiddlewareFunc {
 	c := DefaultJWTConfig
 	c.SigningKey = key
-	return JWTWithConfig(c)
+	return jwtObject.JWTWithConfig(c)
 }
 
 // JWTWithConfig returns a JWT auth middleware with config.
 // See: `JWT()`.
-func JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
+func (jwtObject *JWTMiddleWare) JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
 	// Defaults
 	if config.Skipper == nil {
 		config.Skipper = DefaultJWTConfig.Skipper
@@ -229,15 +240,16 @@ func JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
 				return ErrJWTMissing
 			}
 
+			redisConfig := jwtObject.config.Redis
 			// Check if access_uuid corresponds to user_id in Redis
-			redisUserId, err := redissvc.GetInt(conf.Redis().AccessUuidPrefix + tokenDetails.AccessUuid)
+			redisUserId, err := jwtObject.redisRepository.GetInt(redisConfig.AccessUuidPrefix + tokenDetails.AccessUuid)
 			if err != nil || redisUserId != tokenDetails.UserID {
 				log.Error("error: ", err, " | redis user: ", redisUserId, " | token user: ", tokenDetails.UserID)
 				return ErrJWTMissing
 			}
 
 			user := &types.UserResp{}
-			if err := redissvc.GetStruct(conf.Redis().UserPrefix+strconv.Itoa(tokenDetails.UserID), &user); err != nil {
+			if err := jwtObject.redisRepository.GetStruct(redisConfig.UserPrefix+strconv.Itoa(tokenDetails.UserID), &user); err != nil {
 				log.Error(err)
 				return ErrJWTMissing
 			}

@@ -1,4 +1,4 @@
-package authsvc
+package services
 
 import (
 	"context"
@@ -10,17 +10,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
-	"auth/clients"
 	"auth/config"
 	"auth/consts"
 	"auth/log"
-	"auth/models"
-	"auth/services/redissvc"
-	"auth/services/tokensvc"
-	"auth/services/usersvc"
+	"auth/repositories"
 	"auth/types"
 	"auth/utils/applekeyutil"
 	"auth/utils/errutil"
@@ -35,11 +30,26 @@ import (
 	"google.golang.org/api/option"
 )
 
-func Login(req *types.LoginReq) (*types.LoginResp, error) {
-	var user *models.User
-	var err error
+type AuthService struct {
+	config          *config.Config
+	redisRepository *repositories.RedisRepository
+	jwtService      *JWTService
+	userService     *UserService
+}
 
-	if user, err = usersvc.GetUserByEmail(req.Email); err != nil {
+func NewAuthService(redisRepository *repositories.RedisRepository, jwtService *JWTService,
+	userService *UserService) *AuthService {
+	return &AuthService{
+		config:          config.GetConfig(),
+		redisRepository: redisRepository,
+		jwtService:      jwtService,
+		userService:     userService,
+	}
+}
+
+func (as *AuthService) Login(req *types.LoginReq) (*types.LoginResp, error) {
+	user, err := as.userService.GetUserByEmail(req.Email)
+	if err != nil {
 		log.Error(err)
 		return nil, errutil.ErrInvalidEmail
 	}
@@ -63,45 +73,24 @@ func Login(req *types.LoginReq) (*types.LoginResp, error) {
 		log.Error(err)
 		return nil, errutil.ErrInvalidPassword
 	}
-
-	return login(user.ID, false)
+	return as.login(user.ID)
 }
 
-func login(userId int, isAfterOtpVerification bool) (*types.LoginResp, error) {
-	var token *types.JwtToken
-	var user *types.UserResp
-	var err error
-
-	if user, err = getUserInfo(userId, false); err != nil {
+func (as *AuthService) login(userId int) (*types.LoginResp, error) {
+	userResp, err := as.userService.GetUserResponse(userId, true)
+	if err != nil {
 		return nil, err
 	}
 
-	if token, err = createToken(user.ID); err != nil {
+	token, err := as.createToken(userId)
+	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	if err = usersvc.SetMetaDataUponLogin(userId, isAfterOtpVerification); err != nil {
+	if err = as.userService.UpdateLastLogin(userId); err != nil {
 		log.Error(err)
 		return nil, errutil.ErrUpdateMetaData
-	}
-
-	if isAfterOtpVerification {
-		// Send welcome email in background
-		// email service
-		go func(to string) {
-			defer methodutil.RecoverPanic()
-			emailBody := types.UserCreateEmailReq{
-				To: to,
-			}
-			path := consts.UserCreateMailApiPath
-			if err := clients.Email().Send(path, emailBody); err != nil {
-				log.Error(err)
-			}
-		}(user.Email)
-
-		user.Verified = true
-		user.Cache()
 	}
 
 	res := &types.LoginResp{
@@ -109,58 +98,58 @@ func login(userId int, isAfterOtpVerification bool) (*types.LoginResp, error) {
 		AccessTokenExpiry:  token.AccessExpiry,
 		RefreshToken:       token.RefreshToken,
 		RefreshTokenExpiry: token.RefreshExpiry,
-		User:               user,
+		User:               userResp,
 	}
 	return res, nil
 }
 
-func createToken(userId int) (*types.JwtToken, error) {
+func (as *AuthService) createToken(userId int) (*types.JwtToken, error) {
 	var token *types.JwtToken
 	var err error
 
-	if token, err = tokensvc.CreateToken(userId); err != nil {
+	if token, err = as.jwtService.CreateToken(userId); err != nil {
 		return nil, errutil.ErrCreateJwt
 	}
 
-	if err = tokensvc.StoreTokenUuid(userId, token); err != nil {
+	if err = as.jwtService.StoreTokenUuid(userId, token); err != nil {
 		return nil, errutil.ErrStoreTokenUuid
 	}
 
 	return token, nil
 }
 
-func Logout(user *types.LoggedInUser) error {
-	return tokensvc.DeleteTokenUuid(
-		config.Redis().AccessUuidPrefix+user.AccessUuid,
-		config.Redis().RefreshUuidPrefix+user.RefreshUuid,
+func (as *AuthService) Logout(user *types.LoggedInUser) error {
+	return as.jwtService.DeleteTokenUuid(
+		as.config.Redis.AccessUuidPrefix+user.AccessUuid,
+		as.config.Redis.RefreshUuidPrefix+user.RefreshUuid,
 	)
 }
 
-func RefreshToken(refreshToken string) (*types.LoginResp, error) {
-	oldToken, err := parseToken(refreshToken, consts.RefreshTokenType)
+func (as *AuthService) RefreshToken(refreshToken string) (*types.LoginResp, error) {
+	oldToken, err := as.parseToken(refreshToken, consts.RefreshTokenType)
 	if err != nil {
 		return nil, errutil.ErrInvalidRefreshToken
 	}
 
-	if !userBelongsToTokenUuid(oldToken.UserID, oldToken.RefreshUuid, consts.RefreshTokenType) {
+	if !as.userBelongsToTokenUuid(oldToken.UserID, oldToken.RefreshUuid, consts.RefreshTokenType) {
 		return nil, errutil.ErrInvalidRefreshToken
 	}
 
 	var user *types.UserResp
-	if user, err = getUserInfo(oldToken.UserID, false); err != nil {
+	if user, err = as.userService.GetUserResponse(oldToken.UserID, false); err != nil {
 		return nil, err
 	}
 
 	var newToken *types.JwtToken
 
-	if newToken, err = createToken(user.ID); err != nil {
+	if newToken, err = as.createToken(user.ID); err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	if err = tokensvc.DeleteTokenUuid(
-		config.Redis().AccessUuidPrefix+oldToken.AccessUuid,
-		config.Redis().RefreshUuidPrefix+oldToken.RefreshUuid,
+	if err = as.jwtService.DeleteTokenUuid(
+		as.config.Redis.AccessUuidPrefix+oldToken.AccessUuid,
+		as.config.Redis.RefreshUuidPrefix+oldToken.RefreshUuid,
 	); err != nil {
 		log.Error(err)
 		return nil, errutil.ErrDeleteOldTokenUuid
@@ -177,27 +166,27 @@ func RefreshToken(refreshToken string) (*types.LoginResp, error) {
 	return res, nil
 }
 
-func VerifyToken(accessToken string) (*types.UserResp, error) {
-	token, err := parseToken(accessToken, consts.AccessTokenType)
+func (as *AuthService) VerifyToken(accessToken string) (*types.UserResp, error) {
+	token, err := as.parseToken(accessToken, consts.AccessTokenType)
 	if err != nil {
 		return nil, errutil.ErrInvalidAccessToken
 	}
 
-	if !userBelongsToTokenUuid(token.UserID, token.AccessUuid, consts.AccessTokenType) {
+	if !as.userBelongsToTokenUuid(token.UserID, token.AccessUuid, consts.AccessTokenType) {
 		return nil, errutil.ErrInvalidAccessToken
 	}
 
 	var userResp *types.UserResp
 
-	if userResp, err = getUserInfo(token.UserID, true); err != nil {
+	if userResp, err = as.userService.GetUserResponse(token.UserID, true); err != nil {
 		return nil, err
 	}
 
 	return userResp, nil
 }
 
-func parseToken(token, tokenType string) (*types.JwtToken, error) {
-	claims, err := parseTokenClaim(token, tokenType)
+func (as *AuthService) parseToken(token, tokenType string) (*types.JwtToken, error) {
+	claims, err := as.parseTokenClaim(token, tokenType)
 	if err != nil {
 		return nil, err
 	}
@@ -217,11 +206,11 @@ func parseToken(token, tokenType string) (*types.JwtToken, error) {
 	return tokenDetails, nil
 }
 
-func parseTokenClaim(token, tokenType string) (jwt.MapClaims, error) {
-	secret := config.Jwt().AccessTokenSecret
+func (as *AuthService) parseTokenClaim(token, tokenType string) (jwt.MapClaims, error) {
+	secret := as.config.Jwt.AccessTokenSecret
 
 	if tokenType == consts.RefreshTokenType {
-		secret = config.Jwt().RefreshTokenSecret
+		secret = as.config.Jwt.RefreshTokenSecret
 	}
 
 	parsedToken, err := methodutil.ParseJwtToken(token, secret)
@@ -242,39 +231,16 @@ func parseTokenClaim(token, tokenType string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-func getUserInfo(userId int, checkInCache bool) (*types.UserResp, error) {
-	userResp := &types.UserResp{}
-	var err error
-
-	if checkInCache {
-		if err = redissvc.GetStruct(config.Redis().UserPrefix+strconv.Itoa(userId), &userResp); err == nil {
-			log.Info("Token user served from cache")
-			return userResp, nil
-		}
-
-		log.Error(err)
-	}
-
-	userResp, err = usersvc.GetUser(userId)
-	if err != nil {
-		return nil, err
-	}
-
-	userResp.Cache()
-
-	return userResp, nil
-}
-
-func userBelongsToTokenUuid(userId int, uuid, uuidType string) bool {
-	prefix := config.Redis().AccessUuidPrefix
+func (as *AuthService) userBelongsToTokenUuid(userId int, uuid, uuidType string) bool {
+	prefix := as.config.Redis.AccessUuidPrefix
 
 	if uuidType == consts.RefreshTokenType {
-		prefix = config.Redis().RefreshUuidPrefix
+		prefix = as.config.Redis.RefreshUuidPrefix
 	}
 
 	redisKey := prefix + uuid
 
-	redisUserId, err := redissvc.GetInt(redisKey)
+	redisUserId, err := as.redisRepository.GetInt(redisKey)
 	if err != nil {
 		switch err {
 		case redis.Nil:
@@ -292,24 +258,24 @@ func userBelongsToTokenUuid(userId int, uuid, uuidType string) bool {
 	return true
 }
 
-func SocialLogin(data *types.SocialLoginReq) (*types.LoginResp, error) {
+func (as *AuthService) SocialLogin(data *types.SocialLoginReq) (*types.LoginResp, error) {
 	switch data.LoginProvider {
 	case consts.LoginProviderGoogle:
-		resp, err := processGoogleLogin(data.Token)
+		resp, err := as.processGoogleLogin(data.Token)
 		if err != nil {
 			return nil, err
 		}
 
 		return resp, nil
 	case consts.LoginProviderFacebook:
-		resp, err := processFacebookLogin(data.Token)
+		resp, err := as.processFacebookLogin(data.Token)
 		if err != nil {
 			return nil, err
 		}
 
 		return resp, nil
 	case consts.LoginProviderApple:
-		resp, err := processAppleLogin(data.Token)
+		resp, err := as.processAppleLogin(data.Token)
 		if err != nil {
 			return nil, err
 		}
@@ -320,35 +286,35 @@ func SocialLogin(data *types.SocialLoginReq) (*types.LoginResp, error) {
 	}
 }
 
-func processGoogleLogin(token string) (*types.LoginResp, error) {
+func (as *AuthService) processGoogleLogin(token string) (*types.LoginResp, error) {
 	req := &types.SocialLoginData{}
 	resp := &types.LoginResp{}
 
-	if !isValidGoogleIdToken(token) {
+	if !as.isValidGoogleIdToken(token) {
 		return nil, errutil.ErrInvalidLoginToken
 	}
 
-	googleUser, err := googleUserInfo(token)
+	googleUser, err := as.googleUserInfo(token)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := usersvc.GetUserByEmail(googleUser.Email)
+	user, err := as.userService.GetUserByEmail(googleUser.Email)
 
 	if err != nil && err == gorm.ErrRecordNotFound {
 		req.Email = googleUser.Email
 		req.LoginProvider = consts.LoginProviderGoogle
-		user, err = usersvc.CreateUserForSocialLogin(req)
+		user, err = as.userService.CreateUserForSocialLogin(req)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if user.LoginProvider != consts.LoginProviderGoogle {
-		return nil, getLoginProviderError(user.LoginProvider)
+		return nil, as.getLoginProviderError(user.LoginProvider)
 	}
 
-	loginResp, err := login(user.ID, false)
+	loginResp, err := as.login(user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -360,8 +326,8 @@ func processGoogleLogin(token string) (*types.LoginResp, error) {
 	return resp, nil
 }
 
-func isValidGoogleIdToken(idToken string) bool {
-	google, err := oauth2.NewService(context.Background(), option.WithAPIKey(config.App().GoogleApiKey))
+func (as *AuthService) isValidGoogleIdToken(idToken string) bool {
+	google, err := oauth2.NewService(context.Background(), option.WithAPIKey(as.config.App.GoogleApiKey))
 	if err != nil {
 		log.Error(err)
 		return false
@@ -375,7 +341,7 @@ func isValidGoogleIdToken(idToken string) bool {
 	return true
 }
 
-func googleUserInfo(idToken string) (*types.GoogleTokenInfo, error) {
+func (as *AuthService) googleUserInfo(idToken string) (*types.GoogleTokenInfo, error) {
 	token, _, err := new(jwt.Parser).ParseUnverified(idToken, &types.GoogleTokenInfo{})
 	if err != nil {
 		log.Error(err)
@@ -389,7 +355,7 @@ func googleUserInfo(idToken string) (*types.GoogleTokenInfo, error) {
 	return nil, errutil.ErrParseJwt
 }
 
-func processFacebookLogin(token string) (*types.LoginResp, error) {
+func (as *AuthService) processFacebookLogin(token string) (*types.LoginResp, error) {
 	req := &types.SocialLoginData{}
 	resp := &types.LoginResp{}
 
@@ -398,22 +364,22 @@ func processFacebookLogin(token string) (*types.LoginResp, error) {
 		return nil, err
 	}
 
-	user, err := usersvc.GetUserByEmail(fbUser.Email)
+	user, err := as.userService.GetUserByEmail(fbUser.Email)
 
 	if err != nil && err == gorm.ErrRecordNotFound {
 		req.Email = fbUser.Email
 		req.LoginProvider = consts.LoginProviderFacebook
-		user, err = usersvc.CreateUserForSocialLogin(req)
+		user, err = as.userService.CreateUserForSocialLogin(req)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if user.LoginProvider != consts.LoginProviderFacebook {
-		return nil, getLoginProviderError(user.LoginProvider)
+		return nil, as.getLoginProviderError(user.LoginProvider)
 	}
 
-	loginResp, err := login(user.ID, false)
+	loginResp, err := as.login(user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -451,35 +417,35 @@ func fbUserInfo(token string) (*types.FbTokenInfo, error) {
 	return tokenInfo, nil
 }
 
-func processAppleLogin(token string) (*types.LoginResp, error) {
+func (as *AuthService) processAppleLogin(token string) (*types.LoginResp, error) {
 	req := &types.SocialLoginData{}
 	resp := &types.LoginResp{}
 
-	if !isValidAppleIdToken(token) {
+	if !as.isValidAppleIdToken(token) {
 		return nil, errutil.ErrInvalidLoginToken
 	}
 
-	appleUser, err := appleUserInfo(token)
+	appleUser, err := as.appleUserInfo(token)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := usersvc.GetUserByEmail(appleUser.Email)
+	user, err := as.userService.GetUserByEmail(appleUser.Email)
 
 	if err != nil && err == gorm.ErrRecordNotFound {
 		req.Email = appleUser.Email
 		req.LoginProvider = consts.LoginProviderApple
-		user, err = usersvc.CreateUserForSocialLogin(req)
+		user, err = as.userService.CreateUserForSocialLogin(req)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if user.LoginProvider != consts.LoginProviderApple {
-		return nil, getLoginProviderError(user.LoginProvider)
+		return nil, as.getLoginProviderError(user.LoginProvider)
 	}
 
-	loginResp, err := login(user.ID, false)
+	loginResp, err := as.login(user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -492,7 +458,7 @@ func processAppleLogin(token string) (*types.LoginResp, error) {
 	return resp, nil
 }
 
-func isValidAppleIdToken(idToken string) bool {
+func (as *AuthService) isValidAppleIdToken(idToken string) bool {
 	parts := strings.Split(idToken, ".")
 	if len(parts) != 3 {
 		return false
@@ -515,7 +481,7 @@ func isValidAppleIdToken(idToken string) bool {
 		return false
 	}
 
-	conf := config.AppleLogin()
+	conf := as.config.AppleLogin
 	if tokenInfo.Issuer != conf.AppleIdUrl {
 		log.Error(errors.New("Apple idToken issuer invalid: "), tokenInfo.Issuer)
 		return false
@@ -569,7 +535,7 @@ func isValidAppleIdToken(idToken string) bool {
 	return true
 }
 
-func appleUserInfo(idToken string) (*types.AppleTokenInfo, error) {
+func (as *AuthService) appleUserInfo(idToken string) (*types.AppleTokenInfo, error) {
 	token, _, err := new(jwt.Parser).ParseUnverified(idToken, &types.AppleTokenInfo{})
 	if err != nil {
 		log.Error(err)
@@ -583,7 +549,7 @@ func appleUserInfo(idToken string) (*types.AppleTokenInfo, error) {
 	return nil, errutil.ErrParseJwt
 }
 
-func getLoginProviderError(provider string) error {
+func (as *AuthService) getLoginProviderError(provider string) error {
 	loginProviders := consts.LoginProviders()
 	switch loginProviders[provider] {
 	case consts.Apple:

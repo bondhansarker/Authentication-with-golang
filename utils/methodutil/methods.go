@@ -30,7 +30,8 @@ func CopyStruct(input interface{}, output interface{}) error {
 	if b, err := json.Marshal(input); err == nil {
 		return json.Unmarshal(b, &output)
 	} else {
-		return err
+		log.Error(err.Error())
+		return errors.New("failed to copy the structs")
 	}
 }
 

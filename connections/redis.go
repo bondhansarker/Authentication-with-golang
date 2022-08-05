@@ -1,20 +1,18 @@
-package conn
+package connections
 
 import (
 	"auth/config"
 	"auth/log"
-
 	"github.com/go-redis/redis"
 )
 
 var redisClient *redis.Client
 
-func ConnectRedis() {
+func NewRedisClient() *redis.Client {
 	conf := config.Redis()
-
 	log.Info("connecting to redis at ", conf.Host, ":", conf.Port, "...")
 
-	redisClient = redis.NewClient(&redis.Options{
+	redisClient := redis.NewClient(&redis.Options{
 		Addr:     conf.Host + ":" + conf.Port,
 		Password: conf.Pass,
 		DB:       conf.Db,
@@ -26,6 +24,7 @@ func ConnectRedis() {
 	}
 
 	log.Info("redis connection successful...")
+	return redisClient
 }
 
 func Redis() *redis.Client {

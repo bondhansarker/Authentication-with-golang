@@ -2,20 +2,15 @@ package types
 
 import (
 	"regexp"
-	"strconv"
 	"strings"
 
-	"auth/config"
-	"auth/conn"
+	"auth/connections"
 	"auth/consts"
-	"auth/log"
 	"auth/models"
-	"auth/services/redissvc"
 	"auth/utils/errutil"
 	"auth/utils/methodutil"
-	"gorm.io/gorm"
-
 	"github.com/dgrijalva/jwt-go"
+	"gorm.io/gorm"
 
 	v "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -46,14 +41,6 @@ type UserResp struct {
 	DownloadCount       int64  `json:"download_count"`
 }
 
-func (u *UserResp) Cache() {
-	conf := config.Redis()
-
-	if err := redissvc.SetStruct(conf.UserPrefix+strconv.Itoa(u.ID), u, conf.UserTtl); err != nil {
-		log.Error(err)
-	}
-}
-
 type UserCreateUpdateReq struct {
 	ID            int    `json:"id"`
 	Name          string `json:"name"`
@@ -79,23 +66,6 @@ type ProfilePicUpdateReq struct {
 	ID                  int     `json:"id"`
 	ProfilePic          *string `json:"profile_pic"`
 	ProfilePicExtension *string `json:"profile_pic_extension"`
-}
-
-type MinimalUser struct {
-	ID                  int    `json:"id"`
-	Name                string `json:"name"`
-	UserName            string `json:"user_name"`
-	Email               string `json:"email"`
-	Phone               string `json:"phone"`
-	Website             string `json:"website"`
-	Bio                 string `json:"bio"`
-	Gender              string `json:"gender"`
-	ProfilePic          string `json:"profile_pic"`
-	ProfilePicExtension string `json:"profile_pic_extension"`
-	LoginProvider       string `json:"login_provider"`
-	DownloadCount       int64  `json:"download_count"`
-	UploadCount         int64  `json:"upload_count"`
-	Verified            bool   `json:"verified"`
 }
 
 func (u UserCreateUpdateReq) isCreating() bool {
@@ -139,17 +109,17 @@ func (u *UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	// if !u.isCreating() { // no need to check while doing "update"
 	// 	return nil
 	// }
-
+	dbClient := connections.Db()
 	user := &models.User{}
 	userName := strings.ToLower(u.UserName)
 	var res *gorm.DB
 	if userName != "" {
-		res = conn.Db().Where("email = ? OR user_name = ?", u.Email, userName).Find(&user)
+		res = dbClient.Select("id, user_name, email").Where("user_name = ? OR email = ?", userName, u.Email).First(&user)
 	} else {
-		res = conn.Db().Where("email = ?", u.Email).Find(&user)
+		res = dbClient.Select("id, email").Where("email = ?", u.Email).First(&user)
 	}
 	if res.RowsAffected > 0 {
-		if user.ID != u.ID {
+		if user.ID != u.ID || u.ID == 0 {
 			if value == "email" && user.Email == u.Email {
 				return errutil.ErrEmailAlreadyRegistered
 			}

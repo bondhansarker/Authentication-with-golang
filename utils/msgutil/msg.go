@@ -148,3 +148,7 @@ func SocialLoginFailedMsg() Data {
 func ValidationErrorMsg() string {
 	return "failed to validate fields"
 }
+func ErrorMessage(message string) Data {
+	return NewMessage().Set("message", fmt.Sprintf("%s", message)).Done()
+
+}

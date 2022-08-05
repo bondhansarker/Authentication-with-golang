@@ -3,9 +3,9 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 )
@@ -83,9 +83,9 @@ type Config struct {
 	AppleLogin *AppleLoginConfig
 }
 
-var config Config
+var config *Config
 
-func GetAll() Config {
+func GetConfig() *Config {
 	return config
 }
 
@@ -113,8 +113,8 @@ func AppleLogin() *AppleLoginConfig {
 	return config.AppleLogin
 }
 
-func LoadConfig() {
-	setDefaultConfig()
+func Load() {
+	config = loadDefault()
 	_ = viper.BindEnv("CONSUL_URL")
 	_ = viper.BindEnv("CONSUL_PATH")
 
@@ -128,78 +128,76 @@ func LoadConfig() {
 		err := viper.ReadRemoteConfig()
 
 		if err != nil {
-			log.Println(fmt.Sprintf("%s named \"%s\"", err.Error(), consulPath))
+			log.Info(fmt.Sprintf("%s named \"%s\"", err.Error(), consulPath))
 		}
-
 		if err := viper.Unmarshal(&config); err != nil {
-			panic(err)
+			log.Error(err)
 		}
 
 		if r, err := json.MarshalIndent(&config, "", "  "); err == nil {
-			fmt.Println(string(r))
+			log.Info(string(r))
 		}
 	} else {
-		log.Println("CONSUL_URL or CONSUL_PATH missing! Serving with default config...")
+		log.Error("CONSUL_URL or CONSUL_PATH missing! Serving with default config...")
 	}
 }
 
-func setDefaultConfig() {
-	config.App = &AppConfig{
-		Name:           "auth",
-		Port:           "8080",
-		Page:           1,
-		Limit:          10,
-		Sort:           "created_at",
-		MockOtpEnabled: true,
-		MockOtp:        "",
-		GoogleApiKey:   "419662912672-uh565e54cgnmbve60bubsi0dqbdtpnia.apps.googleusercontent.com",
-		AppKey:         "395d76cd709d4a52b12ea654b5220ca34bd6c041d352bf65",
+func loadDefault() *Config {
+	return &Config{
+		App: &AppConfig{
+			Name:           "auth",
+			Port:           "8080",
+			Page:           1,
+			Limit:          10,
+			Sort:           "created_at",
+			MockOtpEnabled: true,
+			MockOtp:        "",
+			GoogleApiKey:   "419662912672-uh565e54cgnmbve60bubsi0dqbdtpnia.apps.googleusercontent.com",
+			AppKey:         "395d76cd709d4a52b12ea654b5220ca34bd6c041d352bf65",
+		},
+		Db: &DbConfig{
+			Host:            "localhost",
+			Port:            "3307",
+			User:            "root",
+			Pass:            "r00t",
+			Schema:          "auth",
+			MaxIdleConn:     1,
+			MaxOpenConn:     2,
+			MaxConnLifetime: 30,
+			Debug:           true,
+		},
+		Jwt: &JwtConfig{
+			AccessTokenSecret:  "accesstokensecret",
+			RefreshTokenSecret: "refreshtokensecret",
+			AccessTokenExpiry:  3600,   // in seconds, 1 hour
+			RefreshTokenExpiry: 604800, // in seconds, 7 days
+			ContextKey:         "user",
+		},
+
+		Redis: &RedisConfig{
+			Host:              "localhost",
+			Port:              "6379",
+			Pass:              "",
+			Db:                1,
+			AccessUuidPrefix:  "consumer_access-uuid_",
+			RefreshUuidPrefix: "consumer_refresh-uuid_",
+			UserPrefix:        "consumer_user_",
+			OtpPrefix:         "consumer_otp_",
+			OtpNoncePrefix:    "consumer_otp-nonce_",
+			UserTtl:           604800, // in seconds, 1 week
+			OtpTtl:            300,    // in seconds, 5 minutes
+			OtpNonceTtl:       1800,   // in seconds, 30 minutes
+		},
+		Mail: &MailConfig{
+			ServiceURL: "",
+			Timeout:    3,
+		},
+		AppleLogin: &AppleLoginConfig{
+			AppBundleID:           "com.vivasoft.hink",
+			ApplePublicKeyUrl:     "https://appleid.apple.com/auth/keys",
+			AppleIdUrl:            "https://appleid.apple.com",
+			ApplePublicKeyTimeout: 5,
+		},
 	}
 
-	config.Db = &DbConfig{
-		Host:            "localhost",
-		Port:            "3307",
-		User:            "root",
-		Pass:            "r00t",
-		Schema:          "auth",
-		MaxIdleConn:     1,
-		MaxOpenConn:     2,
-		MaxConnLifetime: 30,
-		Debug:           true,
-	}
-
-	config.Jwt = &JwtConfig{
-		AccessTokenSecret:  "accesstokensecret",
-		RefreshTokenSecret: "refreshtokensecret",
-		AccessTokenExpiry:  3600,   // in seconds, 1 hour
-		RefreshTokenExpiry: 604800, // in seconds, 7 days
-		ContextKey:         "user",
-	}
-
-	config.Redis = &RedisConfig{
-		Host:              "localhost",
-		Port:              "6379",
-		Pass:              "",
-		Db:                1,
-		AccessUuidPrefix:  "consumer_access-uuid_",
-		RefreshUuidPrefix: "consumer_refresh-uuid_",
-		UserPrefix:        "consumer_user_",
-		OtpPrefix:         "consumer_otp_",
-		OtpNoncePrefix:    "consumer_otp-nonce_",
-		UserTtl:           604800, // in seconds, 1 week
-		OtpTtl:            300,    // in seconds, 5 minutes
-		OtpNonceTtl:       1800,   // in seconds, 30 minutes
-	}
-
-	config.Mail = &MailConfig{
-		ServiceURL: "",
-		Timeout:    3,
-	}
-
-	config.AppleLogin = &AppleLoginConfig{
-		AppBundleID:           "com.vivasoft.hink",
-		ApplePublicKeyUrl:     "https://appleid.apple.com/auth/keys",
-		AppleIdUrl:            "https://appleid.apple.com",
-		ApplePublicKeyTimeout: 5,
-	}
 }

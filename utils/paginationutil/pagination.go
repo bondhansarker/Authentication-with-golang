@@ -1,4 +1,4 @@
-package usersvc
+package paginationutil
 
 import (
 	"fmt"
@@ -39,22 +39,13 @@ func CalculateTotalPageAndRows(pagination *serializers.Pagination, totalRows int
 	return totalPages
 }
 
-func GenerateFilteringCondition(r *gorm.DB, tableName string, pagination *serializers.Pagination, isCount bool) *gorm.DB {
+func GenerateFilteringCondition(dbClient *gorm.DB, tableName string, pagination *serializers.Pagination, DoCount bool) *gorm.DB {
 	offset := (pagination.Page - 1) * pagination.Limit
-	var sort string
-
-	sort = pagination.Sort
-
-	if !methodutil.IsEmpty(tableName) {
-		sort = tableName + "." + pagination.Sort
-	}
-	var find *gorm.DB
-
-	if !isCount {
-		// get data with limit, offset & order
-		find = r.Limit(int(pagination.Limit)).Offset(int(offset)).Order(sort)
+	var dbQuery *gorm.DB
+	if DoCount {
+		dbQuery = dbClient
 	} else {
-		find = r
+		dbQuery = dbClient.Limit(int(pagination.Limit)).Offset(int(offset)).Order(pagination.Sort)
 	}
 
 	queryString := pagination.QueryString
@@ -62,7 +53,7 @@ func GenerateFilteringCondition(r *gorm.DB, tableName string, pagination *serial
 		queryString = "%" + queryString + "%"
 		for _, field := range pagination.QueryTargetFields {
 			searchQuery := fmt.Sprintf("%s LIKE ?", field)
-			find = find.Or(searchQuery, queryString)
+			dbQuery = dbQuery.Or(searchQuery, queryString)
 		}
 	}
 
@@ -82,33 +73,33 @@ func GenerateFilteringCondition(r *gorm.DB, tableName string, pagination *serial
 			switch action {
 			case "equals":
 				whereQuery := fmt.Sprintf("%s = ?", column)
-				find = find.Where(whereQuery, query)
+				dbQuery = dbQuery.Where(whereQuery, query)
 			case "contains":
 				whereQuery := fmt.Sprintf("%s LIKE ?", column)
-				find = find.Where(whereQuery, "%"+query+"%")
+				dbQuery = dbQuery.Where(whereQuery, "%"+query+"%")
 			case "in":
 				whereQuery := fmt.Sprintf("%s IN (?)", column)
 				queryArray := strings.Split(query, ",")
-				find = find.Where(whereQuery, queryArray)
+				dbQuery = dbQuery.Where(whereQuery, queryArray)
 			case "gt":
 				whereQuery := fmt.Sprintf("%s > (?)", column)
 				queryArray := query
-				find = find.Where(whereQuery, queryArray)
+				dbQuery = dbQuery.Where(whereQuery, queryArray)
 			case "gte":
 				whereQuery := fmt.Sprintf("%s >= (?)", column)
 				queryArray := query
-				find = find.Where(whereQuery, queryArray)
+				dbQuery = dbQuery.Where(whereQuery, queryArray)
 			case "lt":
 				whereQuery := fmt.Sprintf("%s < (?)", column)
 				queryArray := query
-				find = find.Where(whereQuery, queryArray)
+				dbQuery = dbQuery.Where(whereQuery, queryArray)
 			case "lte":
 				whereQuery := fmt.Sprintf("%s <= (?)", column)
 				queryArray := query
-				find = find.Where(whereQuery, queryArray)
+				dbQuery = dbQuery.Where(whereQuery, queryArray)
 			}
 		}
 	}
 
-	return find
+	return dbQuery
 }

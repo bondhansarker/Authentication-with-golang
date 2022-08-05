@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"auth/clients"
-	"auth/config"
-	"auth/conn"
 	"fmt"
 	"os"
 
@@ -22,11 +19,6 @@ func init() {
 
 // Execute executes the root command
 func Execute() {
-	config.LoadConfig()
-	conn.ConnectDb()
-	conn.ConnectRedis()
-	clients.ConnectEmail()
-
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

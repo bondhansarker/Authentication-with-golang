@@ -1,24 +1,25 @@
-package conn
+package connections
 
 import (
+	"fmt"
+	"time"
+
 	"auth/config"
 	"auth/log"
 	"auth/models"
-	"fmt"
-	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-var db *gorm.DB
+var (
+	dB  *gorm.DB
+	err error
+)
 
-func ConnectDb() {
+func NewDbClient() *gorm.DB {
 	conf := config.Db()
-
-	log.Info("connecting to mysql at ", conf.Host, ":", conf.Port, "...")
-
 	logMode := logger.Silent
 	if conf.Debug {
 		logMode = logger.Info
@@ -26,7 +27,7 @@ func ConnectDb() {
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", conf.User, conf.Pass, conf.Host, conf.Port, conf.Schema)
 
-	dB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+	dB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		PrepareStmt: true,
 		Logger:      logger.Default.LogMode(logMode),
 	})
@@ -49,15 +50,14 @@ func ConnectDb() {
 		sqlDb.SetConnMaxLifetime(conf.MaxConnLifetime * time.Second)
 	}
 
-	db = dB
-
-	db.AutoMigrate(
+	dB.AutoMigrate(
 		&models.User{},
 	)
 
 	log.Info("mysql connection successful...")
+	return dB
 }
 
 func Db() *gorm.DB {
-	return db
+	return dB
 }

@@ -8,8 +8,7 @@ import (
 func Init(e *echo.Echo) {
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format:           `${time_custom} ${remote_ip} ${host} ${method} ${uri} ${status} ${latency_human} ${bytes_in} ${bytes_out} "${user_agent}"` + "\n",
-		CustomTimeFormat: "2006-01-02T15:04:05.00",
+		Format: "status=${status}, method=${method}, uri=${uri}, error='${error}'\n",
 	}))
 	e.Use(middleware.CORS())
 	e.Use(middleware.Secure())

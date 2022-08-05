@@ -4,8 +4,7 @@ import (
 	"net/http"
 
 	"auth/log"
-	"auth/services/authsvc"
-	"auth/services/usersvc"
+	"auth/services"
 	"auth/types"
 	"auth/utils/errutil"
 	"auth/utils/methodutil"
@@ -14,7 +13,19 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func Signup(c echo.Context) error {
+type AuthController struct {
+	userService *services.UserService
+	authService *services.AuthService
+}
+
+func NewAuthController(userService *services.UserService, authService *services.AuthService) *AuthController {
+	return &AuthController{
+		userService: userService,
+		authService: authService,
+	}
+}
+
+func (ac *AuthController) Signup(c echo.Context) error {
 	var req types.UserCreateUpdateReq
 	var err error
 
@@ -33,7 +44,7 @@ func Signup(c echo.Context) error {
 		})
 	}
 
-	err = usersvc.CreateUser(&req)
+	err = ac.userService.CreateUser(&req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, msgutil.EntityCreationFailedMsg("User"))
 	}
@@ -41,7 +52,7 @@ func Signup(c echo.Context) error {
 	return c.NoContent(http.StatusCreated)
 }
 
-func Login(c echo.Context) error {
+func (ac *AuthController) Login(c echo.Context) error {
 	var cred types.LoginReq
 	var res *types.LoginResp
 	var err error
@@ -58,7 +69,7 @@ func Login(c echo.Context) error {
 		})
 	}
 
-	if res, err = authsvc.Login(&cred); err != nil {
+	if res, err = ac.authService.Login(&cred); err != nil {
 		switch err {
 		case errutil.ErrInvalidEmail, errutil.ErrInvalidPassword:
 			return c.JSON(http.StatusUnauthorized, msgutil.InvalidUserPassMsg())
@@ -80,16 +91,16 @@ func Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func Logout(c echo.Context) error {
+func (ac *AuthController) Logout(c echo.Context) error {
 	var user *types.LoggedInUser
 	var err error
 
-	if user, err = usersvc.GetUserFromContext(c); err != nil {
+	if user, err = ac.userService.GetUserFromContext(&c); err != nil {
 		log.Error(err)
 		return c.JSON(http.StatusInternalServerError, msgutil.NoLoggedInUserMsg())
 	}
 
-	if err := authsvc.Logout(user); err != nil {
+	if err := ac.authService.Logout(user); err != nil {
 		log.Error(err)
 		return c.JSON(http.StatusInternalServerError, msgutil.LogoutFailedMsg())
 	}
@@ -97,7 +108,7 @@ func Logout(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func SocialLogin(c echo.Context) error {
+func (ac *AuthController) SocialLogin(c echo.Context) error {
 	var req types.SocialLoginReq
 	var err error
 
@@ -113,7 +124,7 @@ func SocialLogin(c echo.Context) error {
 		})
 	}
 
-	resp, err := authsvc.SocialLogin(&req)
+	resp, err := ac.authService.SocialLogin(&req)
 	if err != nil {
 		switch err {
 		case errutil.ErrInvalidLoginToken:
@@ -138,7 +149,7 @@ func SocialLogin(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func RefreshToken(c echo.Context) error {
+func (ac *AuthController) RefreshToken(c echo.Context) error {
 	var token types.TokenRefreshReq
 	var res *types.LoginResp
 	var err error
@@ -148,7 +159,7 @@ func RefreshToken(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
 	}
 
-	if res, err = authsvc.RefreshToken(token.RefreshToken); err != nil {
+	if res, err = ac.authService.RefreshToken(token.RefreshToken); err != nil {
 		switch err {
 		case errutil.ErrParseJwt,
 			errutil.ErrInvalidRefreshToken,
@@ -164,14 +175,14 @@ func RefreshToken(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func VerifyToken(c echo.Context) error {
+func (ac *AuthController) VerifyToken(c echo.Context) error {
 	accessToken, err := methodutil.AccessTokenFromHeader(c)
 
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, msgutil.InvalidTokenMsg("access_token"))
 	}
 
-	res, err := authsvc.VerifyToken(accessToken)
+	res, err := ac.authService.VerifyToken(accessToken)
 	if err != nil {
 		switch err {
 		case errutil.ErrParseJwt,
