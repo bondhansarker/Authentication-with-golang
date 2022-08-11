@@ -1,7 +1,7 @@
 package services
 
 import (
-	errors2 "auth/errors"
+	"auth/errors"
 	"strconv"
 	"strings"
 	"time"
@@ -116,7 +116,7 @@ func (us *UserService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types
 	userResp, err := us.refreshUserCache(user.ID)
 	if err != nil {
 		log.Error(err)
-		return nil, errors2.UpdateCache(consts.User)
+		return nil, errors.UpdateCache(consts.User)
 	}
 
 	return userResp, nil
@@ -138,7 +138,7 @@ func (us *UserService) refreshUserCache(userId int) (*types.UserResp, error) {
 
 	if err := us.redisRepository.SetStruct(us.config.Redis.UserPrefix+strconv.Itoa(userResp.ID), userResp, us.config.Redis.UserTtl); err != nil {
 		log.Error(err)
-		return nil, errors2.UpdateCache(consts.User)
+		return nil, errors.UpdateCache(consts.User)
 	}
 
 	return userResp, nil
@@ -169,7 +169,7 @@ func (us *UserService) UpdateLastLogin(userId int) error {
 	}
 	if err := us.userRepository.UpdateByInterface(userId, data); err != nil {
 		log.Error(err)
-		return errors2.Update(consts.MetaData)
+		return errors.Update(consts.MetaData)
 	}
 	return nil
 }
@@ -229,7 +229,7 @@ func (us *UserService) ChangePassword(userId int, req *types.ChangePasswordReq) 
 	currentPass := []byte(*user.Password)
 	if err = bcrypt.CompareHashAndPassword(currentPass, []byte(req.OldPassword)); err != nil {
 		log.Error(err)
-		return errors2.Invalid(consts.Password)
+		return errors.Invalid(consts.Password)
 	}
 
 	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(req.NewPassword), 8)
@@ -239,7 +239,7 @@ func (us *UserService) ChangePassword(userId int, req *types.ChangePasswordReq) 
 
 	if err := us.userRepository.UpdateByInterface(userId, data); err != nil {
 		log.Error(err)
-		return errors2.Update(consts.Password)
+		return errors.Update(consts.Password)
 	}
 	return nil
 }
@@ -297,21 +297,21 @@ func (us *UserService) VerifyResetPassword(req *types.VerifyResetPasswordReq) er
 	parsedToken, err := methods.ParseJwtToken(req.Token, secret)
 	if err != nil {
 		log.Error(err)
-		return errors2.ParseToken(consts.JWTToken)
+		return errors.ParseToken(consts.JWTToken)
 	}
 
 	if _, ok := parsedToken.Claims.(jwt.Claims); !ok && !parsedToken.Valid {
-		return errors2.Invalid(consts.ResetToken)
+		return errors.Invalid(consts.ResetToken)
 	}
 
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return errors2.Invalid(consts.ResetToken)
+		return errors.Invalid(consts.ResetToken)
 	}
 
 	parsedEmail := claims["email"].(string)
 	if user.Email != parsedEmail {
-		return errors2.Invalid(consts.ResetToken)
+		return errors.Invalid(consts.ResetToken)
 	}
 
 	if !methods.IsEmpty(req.Otp) && !methods.IsEmpty(req.Nonce) {
@@ -320,7 +320,7 @@ func (us *UserService) VerifyResetPassword(req *types.VerifyResetPasswordReq) er
 			Otp:   req.Otp,
 		}
 		if ok, err := us.verifyForgotPasswordOtp(otpReq); err != nil && !ok {
-			return errors2.Invalid(consts.OTP)
+			return errors.Invalid(consts.OTP)
 		}
 	}
 
@@ -334,7 +334,7 @@ func (us *UserService) ResetPassword(req *types.ResetPasswordReq) error {
 	}
 	if err := us.userRepository.UpdateByInterface(req.ID, data); err != nil {
 		log.Error(err)
-		return errors2.ResetPassword()
+		return errors.ResetPassword()
 	}
 
 	return nil
@@ -347,7 +347,7 @@ func (us *UserService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPassw
 	userId, err := us.redisRepository.GetInt(nonceKey)
 	if err != nil {
 		log.Error(err)
-		return nil, errors2.Invalid(consts.OTPNonce)
+		return nil, errors.Invalid(consts.OTPNonce)
 	}
 
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
@@ -414,14 +414,14 @@ func (us *UserService) verifyForgotPasswordOtp(data *types.ForgotPasswordOtpReq)
 	userId, err := us.redisRepository.GetInt(nonceKey)
 	if err != nil {
 		log.Error(err)
-		return false, errors2.Invalid(consts.OTPNonce)
+		return false, errors.Invalid(consts.OTPNonce)
 	}
 
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
 	otp, err := us.redisRepository.Get(otpKey)
 	if err != nil || otp != data.Otp {
 		log.Error(err)
-		return false, errors2.Invalid(consts.OTPNonce)
+		return false, errors.Invalid(consts.OTPNonce)
 	}
 
 	if err = us.redisRepository.Del(nonceKey, otpKey); err != nil {

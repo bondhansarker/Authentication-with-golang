@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	errors2 "auth/errors"
+	"auth/errors"
 	"auth/utils/messages"
 	"fmt"
 	"net/http"
@@ -34,7 +34,7 @@ func (ac *AuthController) Signup(c echo.Context) error {
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors2.ParseRequest()))
+		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
 	}
 
 	req.ID = 0 // remove `id`(if provided somehow) while creation
@@ -60,7 +60,7 @@ func (ac *AuthController) Login(c echo.Context) error {
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors2.ParseRequest()))
+		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
 	}
 
 	if err = req.Validate(); err != nil {
@@ -82,7 +82,7 @@ func (ac *AuthController) SocialLogin(c echo.Context) error {
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors2.ParseRequest()))
+		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
 	}
 
 	if err = req.Validate(); err != nil {
@@ -116,7 +116,7 @@ func (ac *AuthController) Logout(c echo.Context) error {
 
 	if err := ac.authService.Logout(user); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors2.LogoutFailed()))
+		return c.JSON(messages.BuildResponseBy(errors.LogoutFailed()))
 	}
 
 	return c.NoContent(http.StatusOK)

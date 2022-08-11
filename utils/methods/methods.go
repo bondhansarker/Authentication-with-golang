@@ -1,7 +1,7 @@
 package methods
 
 import (
-	errors2 "auth/errors"
+	"auth/errors"
 	"encoding/json"
 	"math/rand"
 	"reflect"
@@ -28,12 +28,12 @@ func CopyStruct(input interface{}, output interface{}) error {
 	if b, err := json.Marshal(input); err == nil {
 		if err := json.Unmarshal(b, &output); err != nil {
 			log.Info(err.Error())
-			return errors2.CopyStruct()
+			return errors.CopyStruct()
 		}
 		return nil
 	} else {
 		log.Info(err.Error())
-		return errors2.CopyStruct()
+		return errors.CopyStruct()
 	}
 }
 
@@ -55,7 +55,7 @@ func InArray(needle interface{}, haystack interface{}) bool {
 func ParseParam(c echo.Context, paramName string) (string, error) {
 	param := c.Param(paramName)
 	if param == "" {
-		return "", errors2.NotFound(paramName)
+		return "", errors.NotFound(paramName)
 	}
 	return param, nil
 }
@@ -71,13 +71,13 @@ func AccessTokenFromHeader(c echo.Context) (string, error) {
 		return auth[l+1:], nil
 	}
 
-	return "", errors2.Invalid(consts.AccessToken)
+	return "", errors.Invalid(consts.AccessToken)
 }
 
 func ParseJwtToken(token, secret string) (*jwt.Token, error) {
 	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors2.InvalidSigningMethod()
+			return nil, errors.InvalidSigningMethod()
 		}
 		return []byte(secret), nil
 	})
@@ -141,7 +141,7 @@ func IsEmpty(x interface{}) bool {
 
 func ValidatePassword(pass string) error {
 	if len(pass) < 8 {
-		return errors2.InvalidPasswordFormat()
+		return errors.InvalidPasswordFormat()
 	}
 
 	num := `[0-9]{1}`
@@ -150,19 +150,19 @@ func ValidatePassword(pass string) error {
 	symbol := `[.!@#~$%^&*()+|_<>]{1}`
 
 	if b, err := regexp.MatchString(num, pass); !b || err != nil {
-		return errors2.InvalidPasswordFormat()
+		return errors.InvalidPasswordFormat()
 	}
 
 	if b, err := regexp.MatchString(a_z, pass); !b || err != nil {
-		return errors2.InvalidPasswordFormat()
+		return errors.InvalidPasswordFormat()
 	}
 
 	if b, err := regexp.MatchString(A_Z, pass); !b || err != nil {
-		return errors2.InvalidPasswordFormat()
+		return errors.InvalidPasswordFormat()
 	}
 
 	if b, err := regexp.MatchString(symbol, pass); !b || err != nil {
-		return errors2.InvalidPasswordFormat()
+		return errors.InvalidPasswordFormat()
 	}
 
 	return nil

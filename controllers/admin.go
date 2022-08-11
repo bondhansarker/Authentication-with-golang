@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	errors2 "auth/errors"
+	"auth/errors"
 	"auth/utils/messages"
 	"net/http"
 	"strconv"
@@ -33,7 +33,7 @@ func CheckAdminAuthorization(c echo.Context) error {
 		return c.JSON(messages.BuildResponseBy(err))
 	}
 	if user.IsAdmin == nil || *user.IsAdmin == false {
-		err = errors2.AccessForbidden()
+		err = errors.AccessForbidden()
 		return c.JSON(messages.BuildResponseBy(err))
 	}
 	return nil
@@ -50,7 +50,7 @@ func (ac *AdminController) FindUser(c echo.Context) error {
 	userId, err := strconv.Atoi(id)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors2.ParseRequest()))
+		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
 	}
 
 	resp, err := ac.userService.GetUserResponse(userId, true)
@@ -83,7 +83,7 @@ func (ac *AdminController) UpdateUser(c echo.Context) error {
 	var req types.UserCreateUpdateReq
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors2.ParseRequest()))
+		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
 	}
 
 	id, err := methods.ParseParam(c, "id")
@@ -95,7 +95,7 @@ func (ac *AdminController) UpdateUser(c echo.Context) error {
 	userId, err := strconv.Atoi(id)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors2.ParseRequest()))
+		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
 	}
 
 	req.ID = userId

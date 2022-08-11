@@ -1,7 +1,7 @@
 package types
 
 import (
-	errors2 "auth/errors"
+	"auth/errors"
 	"regexp"
 	"strings"
 
@@ -120,10 +120,10 @@ func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	if res.RowsAffected > 0 {
 		if user.ID != u.ID || u.ID == 0 {
 			if value == "email" && user.Email == u.Email {
-				return errors2.ErrEmailAlreadyRegistered
+				return errors.ErrEmailAlreadyRegistered
 			}
 			if value == "user_name" && userName != "" && user.UserName == userName {
-				return errors2.ErrUserNameAlreadyRegistered
+				return errors.ErrUserNameAlreadyRegistered
 			}
 		}
 	}
@@ -132,7 +132,7 @@ func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 
 func (u UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
 	if !u.isCreating() && !methods.IsEmpty(u.Email) {
-		return errors2.ErrEmailUpdateNotAllowed
+		return errors.ErrEmailUpdateNotAllowed
 	}
 
 	return nil
@@ -140,7 +140,7 @@ func (u UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
 
 func (u UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
 	if !u.isCreating() && !methods.IsEmpty(u.UserName) {
-		return errors2.ErrUserNameUpdateNotAllowed
+		return errors.ErrUserNameUpdateNotAllowed
 	}
 
 	return nil
@@ -148,7 +148,7 @@ func (u UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
 
 func (u UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
 	if !u.isCreating() && !methods.IsEmpty(u.Password) {
-		return errors2.ErrPasswordUpdateNotAllowed
+		return errors.ErrPasswordUpdateNotAllowed
 	}
 
 	return nil
@@ -170,7 +170,7 @@ func (u UserCreateUpdateReq) loginProviderValid(value interface{}) error {
 	loginProviders := consts.LoginProviders()
 
 	if _, ok := loginProviders[u.LoginProvider]; !ok {
-		return errors2.ErrInvalidLoginProvider
+		return errors.ErrInvalidLoginProvider
 	}
 
 	return nil

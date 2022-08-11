@@ -1,7 +1,7 @@
 package services
 
 import (
-	errors2 "auth/errors"
+	"auth/errors"
 	"context"
 	"crypto"
 	"crypto/rsa"
@@ -49,20 +49,20 @@ func (as *AuthService) Login(req *types.LoginReq) (*types.LoginResp, error) {
 	user, err := as.userService.GetUserByEmail(req.Email)
 	if err != nil {
 		log.Error(err)
-		return nil, errors2.LoginFailed()
+		return nil, errors.LoginFailed()
 	}
 
 	// NOTE: Only Users registered via Hink provider are allowed here
 	if user.LoginProvider != consts.LoginProviderHink {
-		return nil, errors2.InvalidLoginAttempt(user.LoginProvider)
+		return nil, errors.InvalidLoginAttempt(user.LoginProvider)
 	}
 
 	loginPass := []byte(req.Password)
 	hashedPass := []byte(*user.Password)
 
 	if err = bcrypt.CompareHashAndPassword(hashedPass, loginPass); err != nil {
-		log.Error(errors2.Invalid(consts.Password))
-		return nil, errors2.LoginFailed()
+		log.Error(errors.Invalid(consts.Password))
+		return nil, errors.LoginFailed()
 	}
 	return as.login(user.ID)
 }
@@ -71,7 +71,7 @@ func (as *AuthService) login(userId int) (*types.LoginResp, error) {
 	userResp, err := as.userService.GetUserResponse(userId, true)
 	if err != nil {
 		log.Error(err)
-		return nil, errors2.LoginFailed()
+		return nil, errors.LoginFailed()
 	}
 
 	token, err := as.createToken(userId)
@@ -100,11 +100,11 @@ func (as *AuthService) createToken(userId int) (*types.JwtToken, error) {
 	var err error
 
 	if token, err = as.jwtService.CreateToken(userId); err != nil {
-		return nil, errors2.Create(consts.JWTToken)
+		return nil, errors.Create(consts.JWTToken)
 	}
 
 	if err = as.jwtService.StoreTokenUuid(userId, token); err != nil {
-		return nil, errors2.Store(consts.JWTToken)
+		return nil, errors.Store(consts.JWTToken)
 	}
 
 	return token, nil
@@ -120,11 +120,11 @@ func (as *AuthService) Logout(user *types.LoggedInUser) error {
 func (as *AuthService) RefreshToken(refreshToken string) (*types.LoginResp, error) {
 	oldToken, err := as.parseToken(refreshToken, consts.RefreshTokenType)
 	if err != nil {
-		return nil, errors2.Invalid(consts.RefreshToken)
+		return nil, errors.Invalid(consts.RefreshToken)
 	}
 
 	if !as.userBelongsToTokenUuid(oldToken.UserID, oldToken.RefreshUuid, consts.RefreshTokenType) {
-		return nil, errors2.Invalid(consts.RefreshToken)
+		return nil, errors.Invalid(consts.RefreshToken)
 	}
 
 	var user *types.UserResp
@@ -144,7 +144,7 @@ func (as *AuthService) RefreshToken(refreshToken string) (*types.LoginResp, erro
 		as.config.Redis.RefreshUuidPrefix+oldToken.RefreshUuid,
 	); err != nil {
 		log.Error(err)
-		return nil, errors2.Delete(consts.OldToken)
+		return nil, errors.Delete(consts.OldToken)
 	}
 
 	res := &types.LoginResp{
@@ -161,11 +161,11 @@ func (as *AuthService) RefreshToken(refreshToken string) (*types.LoginResp, erro
 func (as *AuthService) VerifyToken(accessToken string) (*types.UserResp, error) {
 	token, err := as.parseToken(accessToken, consts.AccessTokenType)
 	if err != nil {
-		return nil, errors2.Invalid(consts.AccessToken)
+		return nil, errors.Invalid(consts.AccessToken)
 	}
 
 	if !as.userBelongsToTokenUuid(token.UserID, token.AccessUuid, consts.AccessTokenType) {
-		return nil, errors2.Invalid(consts.AccessToken)
+		return nil, errors.Invalid(consts.AccessToken)
 	}
 
 	userResp, err := as.userService.GetUserResponse(token.UserID, false)
@@ -193,7 +193,7 @@ func (as *AuthService) parseToken(token, tokenType string) (*types.JwtToken, err
 
 	if tokenDetails.UserID == 0 || tokenDetails.AccessUuid == "" || tokenDetails.RefreshUuid == "" {
 		log.Error(claims)
-		return nil, errors2.Invalid(consts.RefreshToken)
+		return nil, errors.Invalid(consts.RefreshToken)
 	}
 
 	return tokenDetails, nil
@@ -209,16 +209,16 @@ func (as *AuthService) parseTokenClaim(token, tokenType string) (jwt.MapClaims, 
 	parsedToken, err := methods.ParseJwtToken(token, secret)
 	if err != nil {
 		log.Error(err)
-		return nil, errors2.ParseToken(consts.JWTToken)
+		return nil, errors.ParseToken(consts.JWTToken)
 	}
 
 	if _, ok := parsedToken.Claims.(jwt.Claims); !ok || !parsedToken.Valid {
-		return nil, errors2.Invalid(consts.AccessToken)
+		return nil, errors.Invalid(consts.AccessToken)
 	}
 
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, errors2.Invalid(consts.AccessToken)
+		return nil, errors.Invalid(consts.AccessToken)
 	}
 
 	return claims, nil
@@ -273,7 +273,7 @@ func (as *AuthService) SocialLogin(data *types.SocialLoginReq) (*types.LoginResp
 		}
 		return resp, nil
 	default:
-		return nil, errors2.ErrInvalidLoginProvider
+		return nil, errors.ErrInvalidLoginProvider
 	}
 }
 
@@ -282,7 +282,7 @@ func (as *AuthService) processGoogleLogin(token string) (*types.LoginResp, error
 	resp := &types.LoginResp{}
 
 	if !as.isValidGoogleIdToken(token) {
-		return nil, errors2.Invalid(consts.SocialLoginToken)
+		return nil, errors.Invalid(consts.SocialLoginToken)
 	}
 
 	googleUser, err := as.googleUserInfo(token)
@@ -293,24 +293,24 @@ func (as *AuthService) processGoogleLogin(token string) (*types.LoginResp, error
 
 	user, err := as.userService.GetUserByEmail(googleUser.Email)
 
-	if err != nil && err == errors2.NotFound(consts.User) {
+	if err != nil && err == errors.NotFound(consts.User) {
 		req.Email = googleUser.Email
 		req.LoginProvider = consts.LoginProviderGoogle
 		user, err = as.userService.Create(req)
 		if err != nil {
 			log.Error(err)
-			return nil, errors2.LoginFailed()
+			return nil, errors.LoginFailed()
 		}
 	}
 
 	if user.LoginProvider != consts.LoginProviderGoogle {
-		return nil, errors2.AlreadyRegisteredVia(user.LoginProvider)
+		return nil, errors.AlreadyRegisteredVia(user.LoginProvider)
 	}
 
 	loginResp, err := as.login(user.ID)
 	if err != nil {
 		log.Error(err)
-		return nil, errors2.LoginFailed()
+		return nil, errors.LoginFailed()
 	}
 
 	err = methods.CopyStruct(loginResp, &resp)
@@ -347,7 +347,7 @@ func (as *AuthService) googleUserInfo(idToken string) (*types.GoogleTokenInfo, e
 		return tokenInfo, nil
 	}
 
-	return nil, errors2.ParseToken(consts.JWTToken)
+	return nil, errors.ParseToken(consts.JWTToken)
 }
 
 func (as *AuthService) processFacebookLogin(token string) (*types.LoginResp, error) {
@@ -362,18 +362,18 @@ func (as *AuthService) processFacebookLogin(token string) (*types.LoginResp, err
 
 	user, err := as.userService.GetUserByEmail(fbUser.Email)
 
-	if err != nil && err == errors2.NotFound(consts.User) {
+	if err != nil && err == errors.NotFound(consts.User) {
 		req.Email = fbUser.Email
 		req.LoginProvider = consts.LoginProviderFacebook
 		user, err = as.userService.Create(req)
 		if err != nil {
 			log.Error(err)
-			return nil, errors2.LoginFailed()
+			return nil, errors.LoginFailed()
 		}
 	}
 
 	if user.LoginProvider != consts.LoginProviderFacebook {
-		return nil, errors2.AlreadyRegisteredVia(user.LoginProvider)
+		return nil, errors.AlreadyRegisteredVia(user.LoginProvider)
 	}
 
 	loginResp, err := as.login(user.ID)
@@ -404,7 +404,7 @@ func fbUserInfo(token string) (*types.FbTokenInfo, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors2.Invalid(consts.SocialLoginToken)
+		return nil, errors.Invalid(consts.SocialLoginToken)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(tokenInfo); err != nil {
@@ -420,7 +420,7 @@ func (as *AuthService) processAppleLogin(token string) (*types.LoginResp, error)
 	resp := &types.LoginResp{}
 
 	if !as.isValidAppleIdToken(token) {
-		return nil, errors2.Invalid(consts.SocialLoginToken)
+		return nil, errors.Invalid(consts.SocialLoginToken)
 	}
 
 	appleUser, err := as.appleUserInfo(token)
@@ -431,18 +431,18 @@ func (as *AuthService) processAppleLogin(token string) (*types.LoginResp, error)
 
 	user, err := as.userService.GetUserByEmail(appleUser.Email)
 
-	if err != nil && err == errors2.NotFound(consts.User) {
+	if err != nil && err == errors.NotFound(consts.User) {
 		req.Email = appleUser.Email
 		req.LoginProvider = consts.LoginProviderApple
 		user, err = as.userService.Create(req)
 		if err != nil {
 			log.Error(err)
-			return nil, errors2.LoginFailed()
+			return nil, errors.LoginFailed()
 		}
 	}
 
 	if user.LoginProvider != consts.LoginProviderApple {
-		return nil, errors2.AlreadyRegisteredVia(user.LoginProvider)
+		return nil, errors.AlreadyRegisteredVia(user.LoginProvider)
 	}
 
 	loginResp, err := as.login(user.ID)
@@ -547,9 +547,9 @@ func (as *AuthService) appleUserInfo(idToken string) (*types.AppleTokenInfo, err
 		return tokenInfo, nil
 	}
 
-	return nil, errors2.ParseToken(consts.JWTToken)
+	return nil, errors.ParseToken(consts.JWTToken)
 }
 
 func (as *AuthService) getLoginProviderError(provider string) error {
-	return errors2.AlreadyRegisteredVia(provider)
+	return errors.AlreadyRegisteredVia(provider)
 }
