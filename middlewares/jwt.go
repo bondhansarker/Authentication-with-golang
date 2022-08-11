@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"auth/config"
-	"auth/log"
 	"auth/repositories"
 	"auth/types"
-	"auth/utils/methodutil"
+	"auth/utils/log"
+	"auth/utils/methods"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 )
@@ -23,7 +23,7 @@ type JWTMiddleWare struct {
 
 func NewJWTMiddleWare(redisRepository *repositories.RedisRepository) *JWTMiddleWare {
 	return &JWTMiddleWare{
-		config:          config.GetConfig(),
+		config:          config.AllConfig(),
 		redisRepository: redisRepository,
 	}
 }
@@ -235,7 +235,7 @@ func (jwtObject *JWTMiddleWare) JWTWithConfig(config JWTConfig) echo.MiddlewareF
 			}
 
 			tokenDetails := &types.JwtToken{}
-			if err := methodutil.MapToStruct(claims, tokenDetails); err != nil {
+			if err := methods.MapToStruct(claims, tokenDetails); err != nil {
 				log.Info(err)
 				return ErrJWTMissing
 			}

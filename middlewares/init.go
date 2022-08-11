@@ -13,7 +13,6 @@ func Init(e *echo.Echo) {
 	e.Use(middleware.CORS())
 	e.Use(middleware.Secure())
 	e.Use(middleware.Recover())
-
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Skipper: func(context echo.Context) bool {
 			return context.Request().URL.Path == "/metrics"

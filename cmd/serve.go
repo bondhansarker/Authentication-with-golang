@@ -4,16 +4,16 @@ import (
 	"os"
 
 	"auth/config"
-	"auth/connections"
+	"auth/connection"
 	"auth/controllers"
 	"auth/middlewares"
 	"auth/repositories"
 	"auth/routes"
 	"auth/server"
 	"auth/services"
+	"auth/utils/log"
 	"github.com/labstack/echo/v4"
-	log "github.com/sirupsen/logrus"
-
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -23,22 +23,28 @@ var serveCmd = &cobra.Command{
 }
 
 func serve(cmd *cobra.Command, args []string) {
-	// Logger
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
+	// logger
+	// Log as JSON instead of the default ASCII formatter.
+	log.SetLogFormatter(&logrus.TextFormatter{})
+	log.SetLogOutput(os.Stdout)
+	log.SetLogLevel(logrus.InfoLevel)
 
-	// Config
+	// config
 	config.Load()
 
-	// Mysql
-	var dbClient = connections.NewDbClient()
+	// connection
+	connection.Redis()
+	connection.Db()
 
-	// Redis
-	var redisClient = connections.NewRedisClient()
+	// mysql
+	var dbClient = connection.DbClient()
 
-	// Repositories
+	// redis
+	var redisClient = connection.RedisClient()
+
+	// repositories
 	var redisRepository = repositories.NewRedisRepository(redisClient)
-	var userRepository = repositories.NewUserRepository(dbClient, redisRepository)
+	var userRepository = repositories.NewUserRepository(dbClient)
 
 	// middlewares
 	var jwtMiddleware = middlewares.NewJWTMiddleWare(redisRepository)

@@ -1,9 +1,10 @@
 package types
 
 import (
+	"regexp"
+
 	v "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"regexp"
 )
 
 type UserCreateEmailReq struct {
@@ -11,7 +12,6 @@ type UserCreateEmailReq struct {
 }
 
 type ForgotPasswordResp struct {
-	Message  string `json:"message,omitempty"`
 	UserID   int    `json:"user_id,omitempty"`
 	Token    string `json:"token,omitempty"`
 	OtpNonce string `json:"otp_nonce,omitempty"`

@@ -63,7 +63,7 @@ func (r *Routes) registerRoutes(e *echo.Echo) {
 	v1.PATCH("/user-statistics", r.userController.UpdateUserStat)
 
 	// Admin Routes
-	v1.GET("/users", r.adminController.Users, m.Auth(r.jwtMiddleware))
-	v1.GET("/users/:id", r.adminController.User, m.Auth(r.jwtMiddleware))
-	v1.PATCH("/users/:id", r.adminController.Update, m.Auth(r.jwtMiddleware))
+	v1.GET("/users", r.adminController.FindUsers, m.Auth(r.jwtMiddleware))
+	v1.GET("/users/:id", r.adminController.FindUser, m.Auth(r.jwtMiddleware))
+	v1.PATCH("/users/:id", r.adminController.UpdateUser, m.Auth(r.jwtMiddleware))
 }

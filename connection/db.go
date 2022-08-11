@@ -1,12 +1,12 @@
-package connections
+package connection
 
 import (
 	"fmt"
 	"time"
 
 	"auth/config"
-	"auth/log"
 	"auth/models"
+	"auth/utils/log"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -18,7 +18,7 @@ var (
 	err error
 )
 
-func NewDbClient() *gorm.DB {
+func Db() {
 	conf := config.Db()
 	logMode := logger.Silent
 	if conf.Debug {
@@ -53,11 +53,9 @@ func NewDbClient() *gorm.DB {
 	dB.AutoMigrate(
 		&models.User{},
 	)
-
 	log.Info("mysql connection successful...")
-	return dB
 }
 
-func Db() *gorm.DB {
+func DbClient() *gorm.DB {
 	return dB
 }

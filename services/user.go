@@ -1,23 +1,21 @@
 package services
 
 import (
+	errors2 "auth/errors"
 	"strconv"
 	"strings"
 	"time"
 
 	"auth/config"
 	"auth/consts"
-	"auth/log"
 	"auth/models"
 	"auth/repositories"
 	"auth/types"
-	"auth/utils/errutil"
-	"auth/utils/methodutil"
-	"auth/utils/msgutil"
+	"auth/utils/log"
+	"auth/utils/methods"
 	"github.com/google/uuid"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -30,63 +28,58 @@ type UserService struct {
 func NewUserService(redisRepository *repositories.RedisRepository,
 	userRepository *repositories.UserRepository) *UserService {
 	return &UserService{
-		config:          config.GetConfig(),
+		config:          config.AllConfig(),
 		redisRepository: redisRepository,
 		userRepository:  userRepository,
 	}
 }
 
-func (us *UserService) CreateUser(userData *types.UserCreateUpdateReq) error {
-	// if user doesn't exist
-	user, err := initializeUser(userData)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	if userData.LoginProvider == consts.LoginProviderHink {
-		*user.Password = encryptPassword(userData.Password)
-	}
-
-	return us.userRepository.Create(user)
-}
-
-func (us *UserService) UpdateUser(userData *types.UserCreateUpdateReq) (*types.UserResp, error) {
-	user, err := initializeUser(userData)
-	if err != nil {
-		log.Error(err.Error())
-		return nil, err
-	}
-
-	err = us.userRepository.Update(user)
-	if err != nil {
-		return nil, err
-	}
-
-	userResp, err := us.refreshUserCache(user.ID)
-	if err != nil {
-		log.Error(err.Error())
-		return nil, err
-	}
-
-	return userResp, nil
-}
-
-func (us *UserService) UpdateProfilePic(profilePicData *types.ProfilePicUpdateReq) (*types.UserResp, error) {
+func initUser(userData interface{}) (*models.User, error) {
 	user := &models.User{}
-	err := methodutil.CopyStruct(profilePicData, &user)
+	err := methods.CopyStruct(userData, &user)
 	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	user.UserName = strings.ToLower(user.UserName)
+	return user, nil
+}
+
+func (us *UserService) Create(userData interface{}) (*models.User, error) {
+	user, err := initUser(userData)
+	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
-	err = us.userRepository.Update(user)
+	if user.LoginProvider == consts.LoginProviderHink {
+		*user.Password = encryptPassword(*user.Password)
+	} else {
+		*user.Verified = true
+	}
+
+	if err := us.userRepository.Create(user); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return user, nil
+}
+
+func (us *UserService) Update(userData interface{}) (*types.UserResp, error) {
+	user, err := initUser(userData)
 	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if err = us.userRepository.Update(user); err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
 	userResp, err := us.refreshUserCache(user.ID)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return nil, err
 	}
 
@@ -94,11 +87,12 @@ func (us *UserService) UpdateProfilePic(profilePicData *types.ProfilePicUpdateRe
 }
 
 func (us *UserService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types.UserResp, error) {
-	user := &models.User{}
-	err := methodutil.CopyStruct(userStat, &user)
+	user, err := initUser(userStat)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
+
 	dbUser, err := us.GetUserResponse(user.ID, true)
 	if err != nil {
 		log.Error(err)
@@ -115,13 +109,14 @@ func (us *UserService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types
 
 	err = us.userRepository.Update(user)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
 	userResp, err := us.refreshUserCache(user.ID)
 	if err != nil {
-		log.Error(err.Error())
-		return nil, err
+		log.Error(err)
+		return nil, errors2.UpdateCache(consts.User)
 	}
 
 	return userResp, nil
@@ -131,16 +126,19 @@ func (us *UserService) refreshUserCache(userId int) (*types.UserResp, error) {
 	userResp := &types.UserResp{}
 	user, err := us.GetUserById(userId)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
-	err = methodutil.CopyStruct(user, &userResp)
+	err = methods.CopyStruct(user, &userResp)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
 	if err := us.redisRepository.SetStruct(us.config.Redis.UserPrefix+strconv.Itoa(userResp.ID), userResp, us.config.Redis.UserTtl); err != nil {
 		log.Error(err)
+		return nil, errors2.UpdateCache(consts.User)
 	}
 
 	return userResp, nil
@@ -149,7 +147,7 @@ func (us *UserService) refreshUserCache(userId int) (*types.UserResp, error) {
 func (us *UserService) GetUserByEmail(email string) (*models.User, error) {
 	user, err := us.userRepository.FindBy("email", email)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return nil, err
 	}
 	return user, nil
@@ -169,45 +167,11 @@ func (us *UserService) UpdateLastLogin(userId int) error {
 	data := map[string]interface{}{
 		"last_login_at": lastLoginAt,
 	}
-	if err := us.userRepository.SetMetaData(userId, data); err != nil {
+	if err := us.userRepository.UpdateByInterface(userId, data); err != nil {
 		log.Error(err)
-		return err
+		return errors2.Update(consts.MetaData)
 	}
 	return nil
-}
-
-func (us *UserService) GetUserFromContext(c *echo.Context) (*types.LoggedInUser, error) {
-	user, ok := (*c).Get("user").(*types.LoggedInUser)
-	if !ok {
-		return nil, errutil.ErrNoContextUser
-	}
-
-	return user, nil
-}
-
-func (us *UserService) GetUserFromHeader(c *echo.Context) (*types.LoggedInUser, error) {
-	userIDString := (*c).Request().Header.Get(consts.UserIDHeader)
-	userID, _ := strconv.Atoi(userIDString)
-	if userID == 0 {
-		return nil, errutil.ErrNoContextUser
-	}
-	currentUser := &types.LoggedInUser{
-		ID: userID,
-	}
-	return currentUser, nil
-}
-
-func (us *UserService) IsAdmin(c *echo.Context) (bool, error) {
-	user, err := us.GetUserFromContext(c)
-	if err != nil {
-		log.Error(err)
-		return false, err
-	}
-	if user.IsAdmin == nil || *user.IsAdmin == false {
-		log.Error("this is not an admin")
-		return false, nil
-	}
-	return true, nil
 }
 
 func (us *UserService) GetUserResponse(userId int, checkInCache bool) (*types.UserResp, error) {
@@ -222,9 +186,9 @@ func (us *UserService) GetUserResponse(userId int, checkInCache bool) (*types.Us
 		log.Error(err)
 	}
 
-	userResp, err = us.refreshUserCache(userId)
-	if err != nil {
+	if userResp, err = us.refreshUserCache(userId); err != nil {
 		log.Error(err)
+		return nil, err
 	}
 
 	return userResp, nil
@@ -238,7 +202,7 @@ func (us *UserService) GetUsers(pagination *types.Pagination) error {
 		return err
 	}
 	var usersResp []*types.UserResp
-	err = methodutil.CopyStruct(users, &usersResp)
+	err = methods.CopyStruct(users, &usersResp)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -258,13 +222,14 @@ func (us *UserService) DeleteUser(id int) error {
 func (us *UserService) ChangePassword(userId int, req *types.ChangePasswordReq) error {
 	user, err := us.GetUserById(userId)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
 	currentPass := []byte(*user.Password)
 	if err = bcrypt.CompareHashAndPassword(currentPass, []byte(req.OldPassword)); err != nil {
 		log.Error(err)
-		return errutil.ErrInvalidPassword
+		return errors2.Invalid(consts.Password)
 	}
 
 	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(req.NewPassword), 8)
@@ -272,9 +237,9 @@ func (us *UserService) ChangePassword(userId int, req *types.ChangePasswordReq) 
 		"password": hashedPass,
 	}
 
-	if err := us.userRepository.SetMetaData(userId, data); err != nil {
+	if err := us.userRepository.UpdateByInterface(userId, data); err != nil {
 		log.Error(err)
-		return err
+		return errors2.Update(consts.Password)
 	}
 	return nil
 }
@@ -282,6 +247,7 @@ func (us *UserService) ChangePassword(userId int, req *types.ChangePasswordReq) 
 func (us *UserService) ForgotPassword(email string) (*types.ForgotPasswordResp, error) {
 	user, err := us.GetUserByEmail(email)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
@@ -311,7 +277,6 @@ func (us *UserService) ForgotPassword(email string) (*types.ForgotPasswordResp, 
 	}
 
 	resp := types.ForgotPasswordResp{
-		Message:  msgutil.ForgotPasswordWithOtpMsg(user.Email),
 		UserID:   user.ID,
 		Token:    signedToken,
 		OtpNonce: otpResp.OtpNonce,
@@ -329,33 +294,33 @@ func (us *UserService) VerifyResetPassword(req *types.VerifyResetPasswordReq) er
 
 	secret := passwordResetSecret(user)
 
-	parsedToken, err := methodutil.ParseJwtToken(req.Token, secret)
+	parsedToken, err := methods.ParseJwtToken(req.Token, secret)
 	if err != nil {
 		log.Error(err)
-		return errutil.ErrParseJwt
+		return errors2.ParseToken(consts.JWTToken)
 	}
 
 	if _, ok := parsedToken.Claims.(jwt.Claims); !ok && !parsedToken.Valid {
-		return errutil.ErrInvalidPasswordResetToken
+		return errors2.Invalid(consts.ResetToken)
 	}
 
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return errutil.ErrInvalidPasswordResetToken
+		return errors2.Invalid(consts.ResetToken)
 	}
 
 	parsedEmail := claims["email"].(string)
 	if user.Email != parsedEmail {
-		return errutil.ErrInvalidPasswordResetToken
+		return errors2.Invalid(consts.ResetToken)
 	}
 
-	if !methodutil.IsEmpty(req.Otp) && !methodutil.IsEmpty(req.Nonce) {
+	if !methods.IsEmpty(req.Otp) && !methods.IsEmpty(req.Nonce) {
 		otpReq := &types.ForgotPasswordOtpReq{
 			Nonce: req.Nonce,
 			Otp:   req.Otp,
 		}
 		if ok, err := us.verifyForgotPasswordOtp(otpReq); err != nil && !ok {
-			return errutil.ErrInvalidOtp
+			return errors2.Invalid(consts.OTP)
 		}
 	}
 
@@ -367,27 +332,12 @@ func (us *UserService) ResetPassword(req *types.ResetPasswordReq) error {
 	data := map[string]interface{}{
 		"password": hashedPass,
 	}
-	if err := us.userRepository.SetMetaData(req.ID, data); err != nil {
+	if err := us.userRepository.UpdateByInterface(req.ID, data); err != nil {
 		log.Error(err)
-		return err
+		return errors2.ResetPassword()
 	}
 
 	return nil
-}
-
-func (us *UserService) CreateUserForSocialLogin(userData *types.SocialLoginData) (*models.User, error) {
-	user := models.User{}
-	respErr := methodutil.CopyStruct(userData, &user)
-	if respErr != nil {
-		return nil, respErr
-	}
-	verified := true
-	user.Verified = &verified
-	if err := us.userRepository.Create(&user); err != nil {
-		log.Error(err.Error())
-		return nil, err
-	}
-	return &user, nil
 }
 
 func (us *UserService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPasswordOtpResp, error) {
@@ -397,7 +347,7 @@ func (us *UserService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPassw
 	userId, err := us.redisRepository.GetInt(nonceKey)
 	if err != nil {
 		log.Error(err)
-		return nil, errutil.ErrInvalidOtpNonce
+		return nil, errors2.Invalid(consts.OTPNonce)
 	}
 
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
@@ -405,6 +355,7 @@ func (us *UserService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPassw
 	// getting user detail using userid
 	userDetail, err := us.GetUserResponse(userId, true)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
@@ -413,6 +364,7 @@ func (us *UserService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPassw
 
 	resp, err := us.createForgotPasswordOtp(userId, userDetail.Email)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
@@ -428,24 +380,13 @@ func passwordResetSecret(user *models.User) string {
 	return *user.Password + strconv.Itoa(int(user.CreatedAt.Unix()))
 }
 
-func initializeUser(userData interface{}) (*models.User, error) {
-	user := &models.User{}
-	err := methodutil.CopyStruct(userData, &user)
-	if err != nil {
-		log.Error(err.Error())
-		return nil, err
-	}
-	user.UserName = strings.ToLower(user.UserName)
-	return user, nil
-}
-
 func (us *UserService) createForgotPasswordOtp(userId int, email string) (*types.ForgotPasswordOtpResp, error) {
 	redisConf := us.config.Redis
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
 
 	nonce := uuid.New().String()
 
-	otp, err := methodutil.GenerateOTP(6)
+	otp, err := methods.GenerateOTP(6)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -473,17 +414,19 @@ func (us *UserService) verifyForgotPasswordOtp(data *types.ForgotPasswordOtpReq)
 	userId, err := us.redisRepository.GetInt(nonceKey)
 	if err != nil {
 		log.Error(err)
-		return false, errutil.ErrInvalidOtpNonce
+		return false, errors2.Invalid(consts.OTPNonce)
 	}
 
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
 	otp, err := us.redisRepository.Get(otpKey)
 	if err != nil || otp != data.Otp {
 		log.Error(err)
-		return false, errutil.ErrInvalidOtp
+		return false, errors2.Invalid(consts.OTPNonce)
 	}
 
-	_ = us.redisRepository.Del(nonceKey, otpKey)
+	if err = us.redisRepository.Del(nonceKey, otpKey); err != nil {
+		log.Error(err)
+	}
 
 	return true, nil
 }

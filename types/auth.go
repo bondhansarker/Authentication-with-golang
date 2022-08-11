@@ -1,11 +1,11 @@
 package types
 
 import (
+	errors2 "auth/errors"
 	"regexp"
 
 	"auth/consts"
-	"auth/utils/errutil"
-	"auth/utils/methodutil"
+	"auth/utils/methods"
 
 	v "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -58,7 +58,7 @@ func (cp ChangePasswordReq) Validate() error {
 }
 
 func (cp *ChangePasswordReq) isValidPasswordFormat(value interface{}) error {
-	return methodutil.ValidatePassword(cp.NewPassword)
+	return methods.ValidatePassword(cp.NewPassword)
 }
 
 type ForgotPasswordReq struct {
@@ -100,7 +100,7 @@ func (rp ResetPasswordReq) Validate() error {
 }
 
 func (rp ResetPasswordReq) isValidPasswordFormat(value interface{}) error {
-	return methodutil.ValidatePassword(rp.Password)
+	return methods.ValidatePassword(rp.Password)
 }
 
 type OtpReq struct {
@@ -147,7 +147,7 @@ func (s SocialLoginReq) loginProviderValid(value interface{}) error {
 	loginProviders := consts.LoginProviders()
 
 	if _, ok := loginProviders[s.LoginProvider]; !ok {
-		return errutil.ErrInvalidLoginProvider
+		return errors2.ErrInvalidLoginProvider
 	}
 
 	return nil

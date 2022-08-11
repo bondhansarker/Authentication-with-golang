@@ -9,7 +9,26 @@ const (
 	LoginProviderApple    = "apple"
 	LoginProviderHink     = "hink"
 
-	UserIDHeader = "hink-user-id"
+	HeaderUserIdKey           = "hink-user-id"
+	HeaderUserEmailAddressKey = "hink-user-email"
+	HeaderIsAdminKey          = "hink-admin"
+
+	// Domains
+	User  = "user"
+	Users = "users"
+
+	// Reserved keywords
+	ResetToken       = "reset token"
+	VerifyToken      = "verify token"
+	RefreshToken     = "refresh token"
+	AccessToken      = "access token"
+	JWTToken         = "jwt token"
+	OldToken         = "old token"
+	SocialLoginToken = "social login token"
+	OTP              = "OTP"
+	OTPNonce         = "OTP nonce"
+	Password         = "password"
+	MetaData         = "metadata"
 
 	Hink     = "Hink"
 	Facebook = "Facebook"

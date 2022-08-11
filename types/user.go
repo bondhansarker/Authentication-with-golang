@@ -1,14 +1,14 @@
 package types
 
 import (
+	errors2 "auth/errors"
 	"regexp"
 	"strings"
 
-	"auth/connections"
+	"auth/connection"
 	"auth/consts"
 	"auth/models"
-	"auth/utils/errutil"
-	"auth/utils/methodutil"
+	"auth/utils/methods"
 	"github.com/dgrijalva/jwt-go"
 	"gorm.io/gorm"
 
@@ -51,7 +51,6 @@ type UserCreateUpdateReq struct {
 	Website       string `json:"website"`
 	Bio           string `json:"bio"`
 	Gender        string `json:"gender"`
-	Verified      *bool  `json:"verified"`
 	LoginProvider string `json:"login_provider"`
 }
 
@@ -109,7 +108,7 @@ func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	// if !u.isCreating() { // no need to check while doing "update"
 	// 	return nil
 	// }
-	dbClient := connections.Db()
+	dbClient := connection.DbClient()
 	user := &models.User{}
 	userName := strings.ToLower(u.UserName)
 	var res *gorm.DB
@@ -121,10 +120,10 @@ func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	if res.RowsAffected > 0 {
 		if user.ID != u.ID || u.ID == 0 {
 			if value == "email" && user.Email == u.Email {
-				return errutil.ErrEmailAlreadyRegistered
+				return errors2.ErrEmailAlreadyRegistered
 			}
 			if value == "user_name" && userName != "" && user.UserName == userName {
-				return errutil.ErrUserNameAlreadyRegistered
+				return errors2.ErrUserNameAlreadyRegistered
 			}
 		}
 	}
@@ -132,24 +131,24 @@ func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 }
 
 func (u UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
-	if !u.isCreating() && !methodutil.IsEmpty(u.Email) {
-		return errutil.ErrEmailUpdateNotAllowed
+	if !u.isCreating() && !methods.IsEmpty(u.Email) {
+		return errors2.ErrEmailUpdateNotAllowed
 	}
 
 	return nil
 }
 
 func (u UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
-	if !u.isCreating() && !methodutil.IsEmpty(u.UserName) {
-		return errutil.ErrUserNameUpdateNotAllowed
+	if !u.isCreating() && !methods.IsEmpty(u.UserName) {
+		return errors2.ErrUserNameUpdateNotAllowed
 	}
 
 	return nil
 }
 
 func (u UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
-	if !u.isCreating() && !methodutil.IsEmpty(u.Password) {
-		return errutil.ErrPasswordUpdateNotAllowed
+	if !u.isCreating() && !methods.IsEmpty(u.Password) {
+		return errors2.ErrPasswordUpdateNotAllowed
 	}
 
 	return nil
@@ -157,7 +156,7 @@ func (u UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
 
 func (u UserCreateUpdateReq) isValidPasswordFormat(value interface{}) error {
 	if u.isCreating() && u.LoginProvider == consts.LoginProviderHink {
-		return methodutil.ValidatePassword(u.Password)
+		return methods.ValidatePassword(u.Password)
 	}
 
 	return nil
@@ -171,7 +170,7 @@ func (u UserCreateUpdateReq) loginProviderValid(value interface{}) error {
 	loginProviders := consts.LoginProviders()
 
 	if _, ok := loginProviders[u.LoginProvider]; !ok {
-		return errutil.ErrInvalidLoginProvider
+		return errors2.ErrInvalidLoginProvider
 	}
 
 	return nil

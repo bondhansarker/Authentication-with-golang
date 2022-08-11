@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"runtime"
 
 	"github.com/sirupsen/logrus"
@@ -19,12 +20,15 @@ func SetLogLevel(level logrus.Level) {
 func SetLogFormatter(formatter logrus.Formatter) {
 	logger.Formatter = formatter
 }
+func SetLogOutput(out io.Writer) {
+	logger.Out = out
+}
 
 // Debug logs a message at level Debug on the standard logger.
 func Debug(args ...interface{}) {
 	if logger.Level >= logrus.DebugLevel {
 		entry := logger.WithFields(logrus.Fields{})
-		//entry.Data["file"] = fileInfo(2)
+		// entry.Data["file"] = fileInfo(2)
 		entry.Debug(args...)
 	}
 }
@@ -33,7 +37,7 @@ func Debug(args ...interface{}) {
 func DebugWithFields(l interface{}, f Fields) {
 	if logger.Level >= logrus.DebugLevel {
 		entry := logger.WithFields(logrus.Fields(f))
-		//entry.Data["file"] = fileInfo(2)
+		// entry.Data["file"] = fileInfo(2)
 		entry.Debug(l)
 	}
 }
@@ -51,7 +55,7 @@ func Info(args ...interface{}) {
 func InfoWithFields(l interface{}, f Fields) {
 	if logger.Level >= logrus.InfoLevel {
 		entry := logger.WithFields(logrus.Fields(f))
-		//entry.Data["file"] = fileInfo(2)
+		// entry.Data["file"] = fileInfo(2)
 		entry.Info(l)
 	}
 }
@@ -101,6 +105,15 @@ func Fatal(args ...interface{}) {
 	}
 }
 
+// Trace logs a message at level Trace on the standard logger.
+func Trace(args ...interface{}) {
+	if logger.Level >= logrus.TraceLevel {
+		entry := logger.WithFields(logrus.Fields{})
+		entry.Data["file"] = fileInfo(2)
+		entry.Trace(args...)
+	}
+}
+
 // Debug logs a message with fields at level Debug on the standard logger.
 func FatalWithFields(l interface{}, f Fields) {
 	if logger.Level >= logrus.FatalLevel {
@@ -134,11 +147,11 @@ func fileInfo(skip int) string {
 		file = "<???>"
 		line = 1
 	}
-	//else {
+	// else {
 	//	slash := strings.LastIndex(file, "/")
 	//	if slash >= 0 {
 	//		file = file[slash+1:]
 	//	}
-	//}
+	// }
 	return fmt.Sprintf("%s:%d", file, line)
 }

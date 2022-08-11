@@ -1,14 +1,14 @@
 package services
 
 import (
+	errors2 "auth/errors"
 	"time"
 
 	"auth/config"
-	"auth/log"
+	"auth/consts"
 	"auth/repositories"
 	"auth/types"
-	"auth/utils/errutil"
-
+	"auth/utils/log"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 )
@@ -20,7 +20,7 @@ type JWTService struct {
 
 func NewJWTService(redisRepository *repositories.RedisRepository) *JWTService {
 	return &JWTService{
-		config:          config.GetConfig(),
+		config:          config.AllConfig(),
 		redisRepository: redisRepository,
 	}
 }
@@ -47,7 +47,7 @@ func (jwtService *JWTService) CreateToken(userId int) (*types.JwtToken, error) {
 	token.AccessToken, err = at.SignedString([]byte(jwtService.config.Jwt.AccessTokenSecret))
 	if err != nil {
 		log.Error(err)
-		return nil, errutil.ErrAccessTokenSign
+		return nil, errors2.SignToken(consts.AccessToken)
 	}
 
 	rtClaims := jwt.MapClaims{}
@@ -60,7 +60,7 @@ func (jwtService *JWTService) CreateToken(userId int) (*types.JwtToken, error) {
 	token.RefreshToken, err = rt.SignedString([]byte(jwtService.config.Jwt.RefreshTokenSecret))
 	if err != nil {
 		log.Error(err)
-		return nil, errutil.ErrRefreshTokenSign
+		return nil, errors2.SignToken(consts.RefreshToken)
 	}
 
 	return token, nil
