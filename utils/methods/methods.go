@@ -83,6 +83,10 @@ func ParseJwtToken(token, secret string) (*jwt.Token, error) {
 	})
 }
 
+func IsSameError(err1, err2 error) bool {
+	return err1.Error() == err2.Error()
+}
+
 func GenerateRandomStringOfLength(length int) string {
 	rand.Seed(time.Now().UnixNano())
 	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")

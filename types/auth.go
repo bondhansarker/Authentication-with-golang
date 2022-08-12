@@ -157,4 +157,5 @@ type SocialLoginData struct {
 	Name          string `json:"name,omitempty"`
 	Email         string `json:"email,omitempty"`
 	LoginProvider string `json:"login_provider,omitempty"`
+	Verified      bool   `json:"verified"`
 }

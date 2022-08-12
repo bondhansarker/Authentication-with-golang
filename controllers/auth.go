@@ -2,13 +2,13 @@ package controllers
 
 import (
 	"auth/errors"
+	"auth/services"
 	"auth/utils/messages"
 	"fmt"
 	"net/http"
 
 	"auth/consts"
 
-	"auth/services"
 	"auth/types"
 	"auth/utils/log"
 	"auth/utils/methods"
@@ -17,13 +17,11 @@ import (
 )
 
 type AuthController struct {
-	userService *services.UserService
-	authService *services.AuthService
+	authService services.IAuthService
 }
 
-func NewAuthController(userService *services.UserService, authService *services.AuthService) *AuthController {
+func NewAuthController(authService services.IAuthService) *AuthController {
 	return &AuthController{
-		userService: userService,
 		authService: authService,
 	}
 }
@@ -44,7 +42,7 @@ func (ac *AuthController) Signup(c echo.Context) error {
 		return c.JSON(messages.BuildValidationResponseBy(err, consts.User))
 	}
 
-	_, err = ac.userService.Create(&req)
+	_, err = ac.authService.SignUp(&req)
 	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
@@ -55,37 +53,34 @@ func (ac *AuthController) Signup(c echo.Context) error {
 
 func (ac *AuthController) Login(c echo.Context) error {
 	var req types.LoginReq
-	var res *types.LoginResp
-	var err error
 
-	if err = c.Bind(&req); err != nil {
+	if err := c.Bind(&req); err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
 	}
 
-	if err = req.Validate(); err != nil {
+	if err := req.Validate(); err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildValidationResponseBy(err, consts.User))
 	}
 
-	if res, err = ac.authService.Login(&req); err != nil {
+	res, err := ac.authService.Login(&req)
+	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}
-
 	return c.JSON(http.StatusOK, res)
 }
 
 func (ac *AuthController) SocialLogin(c echo.Context) error {
 	var req *types.SocialLoginReq
-	var err error
 
-	if err = c.Bind(&req); err != nil {
+	if err := c.Bind(&req); err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
 	}
 
-	if err = req.Validate(); err != nil {
+	if err := req.Validate(); err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildValidationResponseBy(err, consts.User))
 	}
@@ -118,31 +113,27 @@ func (ac *AuthController) Logout(c echo.Context) error {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(errors.LogoutFailed()))
 	}
-
 	return c.NoContent(http.StatusOK)
 }
 
 func (ac *AuthController) RefreshToken(c echo.Context) error {
 	var token types.TokenRefreshReq
-	var res *types.LoginResp
-	var err error
 
-	if err = c.Bind(&token); err != nil {
+	if err := c.Bind(&token); err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}
 
-	if res, err = ac.authService.RefreshToken(token.RefreshToken); err != nil {
+	res, err := ac.authService.RefreshToken(token.RefreshToken)
+	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}
-
 	return c.JSON(http.StatusOK, res)
 }
 
 func (ac *AuthController) VerifyToken(c echo.Context) error {
 	accessToken, err := methods.AccessTokenFromHeader(c)
-
 	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))

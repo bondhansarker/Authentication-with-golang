@@ -1,0 +1,238 @@
+package serviceImpl
+
+import (
+	"auth/config"
+	"auth/consts"
+	"auth/errors"
+	"auth/services"
+	"auth/types"
+	"auth/utils/key_generator"
+	"auth/utils/log"
+	"auth/utils/methods"
+	"context"
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"google.golang.org/api/oauth2/v2"
+	"google.golang.org/api/option"
+	"net/http"
+	"strings"
+)
+
+type OAuthService struct {
+	userService services.IUserService
+}
+
+func NewOAuthService(userService services.IUserService) services.IOAuthService {
+	return &OAuthService{
+		userService: userService,
+	}
+}
+
+func (oas *OAuthService) ProcessGoogleLogin(token string) (int, error) {
+	if !isValidGoogleIdToken(token) {
+		return consts.DefaultInt, errors.Invalid(consts.SocialLoginToken)
+	}
+	googleUser, err := oas.FetchGoogleUserInfo(token)
+	if err != nil {
+		log.Error(err)
+		return consts.DefaultInt, err
+	}
+	return oas.CreateUserWithProvider(googleUser.Email, consts.LoginProviderGoogle)
+}
+
+func (oas *OAuthService) ProcessFacebookLogin(token string) (int, error) {
+	fbUser, err := oas.FetchFbUserInfo(token)
+	if err != nil {
+		log.Error(err)
+		return consts.DefaultInt, err
+	}
+	return oas.CreateUserWithProvider(fbUser.Email, consts.LoginProviderFacebook)
+}
+
+func (oas *OAuthService) ProcessAppleLogin(token string) (int, error) {
+	if !isValidAppleIdToken(token) {
+		return consts.DefaultInt, errors.Invalid(consts.SocialLoginToken)
+	}
+	appleUser, err := oas.FetchAppleUserInfo(token)
+	if err != nil {
+		log.Error(err)
+		return consts.DefaultInt, err
+	}
+	return oas.CreateUserWithProvider(appleUser.Email, consts.LoginProviderApple)
+}
+
+func (oas *OAuthService) FetchGoogleUserInfo(idToken string) (*types.GoogleTokenInfo, error) {
+	token, _, err := new(jwt.Parser).ParseUnverified(idToken, &types.GoogleTokenInfo{})
+	if err != nil {
+		log.Error(err)
+		return nil, errors.Invalid(consts.SocialLoginToken)
+	}
+	if tokenInfo, ok := token.Claims.(*types.GoogleTokenInfo); ok {
+		return tokenInfo, nil
+	}
+	return nil, errors.Invalid(consts.SocialLoginToken)
+}
+
+func (oas *OAuthService) FetchFbUserInfo(token string) (*types.FbTokenInfo, error) {
+	tokenInfo := &types.FbTokenInfo{}
+	url := fmt.Sprintf("https://graph.facebook.com/me?fields=name,first_name,last_name,email&access_token=%s", token)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Error(err)
+		return nil, errors.Invalid(consts.SocialLoginToken)
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Invalid(consts.SocialLoginToken)
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(tokenInfo); err != nil {
+		log.Error(err)
+		return nil, errors.Invalid(consts.SocialLoginToken)
+	}
+
+	return tokenInfo, nil
+}
+
+func (oas *OAuthService) FetchAppleUserInfo(token string) (*types.AppleTokenInfo, error) {
+	parsedToken, _, err := new(jwt.Parser).ParseUnverified(token, &types.AppleTokenInfo{})
+	if err != nil {
+		log.Error(err)
+		return nil, errors.Invalid(consts.SocialLoginToken)
+	}
+	if tokenInfo, ok := parsedToken.Claims.(*types.AppleTokenInfo); ok {
+		return tokenInfo, nil
+	}
+	return nil, errors.Invalid(consts.SocialLoginToken)
+}
+
+// private
+
+func (oas *OAuthService) CreateUserWithProvider(email, provider string) (int, error) {
+	dbUser, err := oas.userService.GetUserByEmail(email)
+	user := &types.UserResp{}
+
+	if err != nil && methods.IsSameError(errors.NotFound(consts.User), err) {
+		req := &types.SocialLoginData{
+			Email:         email,
+			LoginProvider: provider,
+			Verified:      true,
+		}
+		user, err = oas.userService.CreateUser(req)
+		if err != nil {
+			log.Error(err)
+			return consts.DefaultInt, errors.LoginFailed()
+		}
+	}
+
+	if err := methods.CopyStruct(dbUser, &user); err != nil {
+		log.Error(err)
+		return consts.DefaultInt, errors.LoginFailed()
+	}
+
+	if user.LoginProvider != provider {
+		return consts.DefaultInt, errors.InvalidLoginAttempt(user.LoginProvider)
+	}
+	return user.ID, nil
+}
+
+// private methods
+
+func isValidAppleIdToken(idToken string) bool {
+	parts := strings.Split(idToken, ".")
+	if len(parts) != 3 {
+		return false
+	}
+
+	header := parts[0]
+	claim := parts[1]
+	signature := parts[2]
+
+	claimData, err := base64.RawURLEncoding.DecodeString(claim)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+
+	var tokenInfo types.AppleTokenInfo
+	err = json.Unmarshal(claimData, &tokenInfo)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+
+	conf := config.AppleLogin()
+	if tokenInfo.Issuer != conf.AppleIdUrl {
+		log.Error("invalid Apple id token issuer  ", tokenInfo.Issuer)
+		return false
+	}
+
+	if tokenInfo.Audience != conf.AppBundleID {
+		log.Error("invalid Apple idToken audience  ", tokenInfo.Audience)
+		return false
+	}
+
+	// if tokenInfo.ExpiresAt <= time.Now().Unix() {
+	//	return false
+	// }
+
+	keys, err := key_generator.GetApplePublicKeys(conf.ApplePublicKeyUrl, conf.ApplePublicKeyTimeout)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+
+	token, _ := jwt.Parse(idToken, nil)
+
+	var key key_generator.AppleKey
+	for _, v := range keys {
+		if v.Kid == token.Header["kid"].(string) {
+			key = v
+		}
+	}
+
+	if key.N == "" || key.E == "" {
+		log.Error("No matching Apple public key found!")
+		return false
+	}
+
+	publicKeyObject := key_generator.GetPublicKeyObject(key.N, key.E)
+
+	payload := []byte(header + "." + claim)
+	hashedPayload := sha256.Sum256(payload)
+	signatureBytes, err := base64.RawURLEncoding.DecodeString(signature)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+
+	err = rsa.VerifyPKCS1v15(publicKeyObject, crypto.SHA256, hashedPayload[:], signatureBytes)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+
+	return true
+}
+
+func isValidGoogleIdToken(idToken string) bool {
+	google, err := oauth2.NewService(context.Background(), option.WithAPIKey(config.App().GoogleApiKey))
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+	if _, err := google.Tokeninfo().IdToken(idToken).Do(); err != nil {
+		log.Error(err)
+		return false
+	}
+	return true
+}

@@ -25,11 +25,6 @@ func LoginFailed() error {
 	return buildErrorWithHttpCode(message, http.StatusInternalServerError)
 }
 
-func AlreadyRegisteredVia(provider string) error {
-	message = fmt.Sprintf("user already registered via %v", provider)
-	return buildErrorWithHttpCode(message, http.StatusBadRequest)
-}
-
 func InvalidSigningMethod() error {
 	message = fmt.Sprintf("invalid signing method while parsing jwt")
 	return buildErrorWithHttpCode(message, http.StatusUnauthorized)
@@ -41,8 +36,8 @@ func InvalidPasswordFormat() error {
 }
 
 func InvalidLoginAttempt(provider string) error {
-	message = fmt.Sprintf("invalid login attempt via %v", provider)
-	return buildErrorWithHttpCode(message, http.StatusUnprocessableEntity)
+	message = fmt.Sprintf("user is registered via %v", provider)
+	return buildErrorWithHttpCode(message, http.StatusUnauthorized)
 }
 
 func ParseToken(tokenType string) error {

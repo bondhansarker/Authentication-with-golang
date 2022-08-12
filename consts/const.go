@@ -29,11 +29,7 @@ const (
 	OTPNonce         = "OTP nonce"
 	Password         = "password"
 	MetaData         = "metadata"
-
-	Hink     = "Hink"
-	Facebook = "Facebook"
-	Google   = "Google"
-	Apple    = "Apple"
+	DefaultInt       = 0
 
 	UserCreateMailApiPath            = "consumer/user-create"
 	UserForgotPasswordWithOtpApiPath = "forgot-password/otp"
@@ -41,11 +37,11 @@ const (
 	UserForgotPasswordOtp = "forgot_"
 )
 
-func LoginProviders() map[string]string {
-	return map[string]string{
-		LoginProviderHink:     Hink,
-		LoginProviderFacebook: Facebook,
-		LoginProviderGoogle:   Google,
-		LoginProviderApple:    Apple,
+func LoginProviders() map[string]bool {
+	return map[string]bool{
+		LoginProviderHink:     true,
+		LoginProviderFacebook: true,
+		LoginProviderGoogle:   true,
+		LoginProviderApple:    true,
 	}
 }

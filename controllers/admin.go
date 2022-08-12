@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"auth/errors"
+	"auth/services"
 	"auth/utils/messages"
 	"net/http"
 	"strconv"
@@ -11,36 +12,23 @@ import (
 	"auth/utils/log"
 	"auth/utils/paginations"
 
-	"auth/services"
 	"auth/types"
 	"auth/utils/methods"
 	"github.com/labstack/echo/v4"
 )
 
 type AdminController struct {
-	userService *services.UserService
+	userService services.IUserService
 }
 
-func NewAdminController(userService *services.UserService) *AdminController {
+func NewAdminController(userService services.IUserService) *AdminController {
 	return &AdminController{
 		userService: userService,
 	}
 }
 
-func CheckAdminAuthorization(c echo.Context) error {
-	user, err := GetUserFromContext(&c)
-	if err != nil {
-		return c.JSON(messages.BuildResponseBy(err))
-	}
-	if user.IsAdmin == nil || *user.IsAdmin == false {
-		err = errors.AccessForbidden()
-		return c.JSON(messages.BuildResponseBy(err))
-	}
-	return nil
-}
-
 func (ac *AdminController) FindUser(c echo.Context) error {
-	CheckAdminAuthorization(c)
+	checkAdminAuthorization(c)
 	id, err := methods.ParseParam(c, "id")
 	if err != nil {
 		log.Error(err)
@@ -53,7 +41,7 @@ func (ac *AdminController) FindUser(c echo.Context) error {
 		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
 	}
 
-	resp, err := ac.userService.GetUserResponse(userId, true)
+	resp, err := ac.userService.GetUserFromCache(userId, true)
 	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
@@ -63,7 +51,7 @@ func (ac *AdminController) FindUser(c echo.Context) error {
 }
 
 func (ac *AdminController) FindUsers(c echo.Context) error {
-	CheckAdminAuthorization(c)
+	checkAdminAuthorization(c)
 	pagination := paginations.GeneratePaginationRequest(&c)
 	err := ac.userService.GetUsers(pagination)
 	if err != nil {
@@ -79,7 +67,7 @@ func (ac *AdminController) FindUsers(c echo.Context) error {
 }
 
 func (ac *AdminController) UpdateUser(c echo.Context) error {
-	CheckAdminAuthorization(c)
+	checkAdminAuthorization(c)
 	var req types.UserCreateUpdateReq
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
@@ -105,11 +93,25 @@ func (ac *AdminController) UpdateUser(c echo.Context) error {
 		return c.JSON(messages.BuildValidationResponseBy(err, consts.User))
 	}
 
-	resp, err := ac.userService.Update(&req)
+	userResp, err := ac.userService.UpdateUser(&req)
 	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}
 
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, userResp)
+}
+
+// private
+
+func checkAdminAuthorization(c echo.Context) error {
+	user, err := GetUserFromContext(&c)
+	if err != nil {
+		return c.JSON(messages.BuildResponseBy(err))
+	}
+	if user.IsAdmin == nil || *user.IsAdmin == false {
+		err = errors.AccessForbidden()
+		return c.JSON(messages.BuildResponseBy(err))
+	}
+	return nil
 }

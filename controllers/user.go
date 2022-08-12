@@ -2,22 +2,22 @@ package controllers
 
 import (
 	"auth/errors"
+	"auth/services"
 	"auth/utils/messages"
 	"net/http"
 
 	"auth/consts"
 
-	"auth/services"
 	"auth/types"
 	"auth/utils/log"
 	"github.com/labstack/echo/v4"
 )
 
 type UserController struct {
-	userService *services.UserService
+	userService services.IUserService
 }
 
-func NewUserController(userService *services.UserService) *UserController {
+func NewUserController(userService services.IUserService) *UserController {
 	return &UserController{
 		userService: userService,
 	}
@@ -30,7 +30,7 @@ func (uc *UserController) GetUser(c echo.Context) error {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}
-	res, err := uc.userService.GetUserResponse(user.ID, true)
+	res, err := uc.userService.GetUserFromCache(user.ID, true)
 	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
@@ -59,7 +59,7 @@ func (uc *UserController) UpdateUser(c echo.Context) error {
 		return c.JSON(messages.BuildValidationResponseBy(err, consts.User))
 	}
 
-	userResp, err := uc.userService.Update(&req)
+	userResp, err := uc.userService.UpdateUser(&req)
 	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
@@ -84,7 +84,7 @@ func (uc *UserController) UpdateProfilePic(c echo.Context) error {
 
 	req.ID = user.ID
 
-	userResp, err := uc.userService.Update(&req)
+	userResp, err := uc.userService.UpdateUser(&req)
 	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))

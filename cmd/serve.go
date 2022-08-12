@@ -1,16 +1,16 @@
 package cmd
 
 import (
+	repoImpl "auth/repositories/impl"
+	serviceImpl "auth/services/impl"
 	"os"
 
 	"auth/config"
 	"auth/connection"
 	"auth/controllers"
 	"auth/middlewares"
-	"auth/repositories"
 	"auth/routes"
 	"auth/server"
-	"auth/services"
 	"auth/utils/log"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
@@ -43,25 +43,26 @@ func serve(cmd *cobra.Command, args []string) {
 	var redisClient = connection.RedisClient()
 
 	// repositories
-	var redisRepository = repositories.NewRedisRepository(redisClient)
-	var userRepository = repositories.NewUserRepository(dbClient)
-
-	// middlewares
-	var jwtMiddleware = middlewares.NewJWTMiddleWare(redisRepository)
+	var userRepo = repoImpl.NewUserRepository(dbClient)
 
 	// services
-	var jwtService = services.NewJWTService(redisRepository)
-	var userService = services.NewUserService(redisRepository, userRepository)
-	var authService = services.NewAuthService(redisRepository, jwtService, userService)
+	var cacheSvc = serviceImpl.NewRedisService(redisClient)
+	var tokenSvc = serviceImpl.NewJWTTokenService(cacheSvc)
+	var userSvc = serviceImpl.NewUserService(cacheSvc, userRepo)
+	var OAuthSvc = serviceImpl.NewOAuthService(userSvc)
+	var authSvc = serviceImpl.NewAuthService(cacheSvc, tokenSvc, userSvc, OAuthSvc)
+
+	// middlewares
+	var middleware = middlewares.NewJWTMiddleWare(cacheSvc)
 
 	// controllers
-	var authController = controllers.NewAuthController(userService, authService)
-	var userController = controllers.NewUserController(userService)
-	var adminController = controllers.NewAdminController(userService)
+	var authCtr = controllers.NewAuthController(authSvc)
+	var userCtr = controllers.NewUserController(userSvc)
+	var adminCtr = controllers.NewAdminController(userSvc)
 
 	// Server
 	var echo_ = echo.New()
-	var Routes = routes.New(echo_, jwtMiddleware, authController, userController, adminController)
+	var Routes = routes.New(echo_, middleware, authCtr, userCtr, adminCtr)
 	var Server = server.New(echo_)
 
 	Routes.Init()
