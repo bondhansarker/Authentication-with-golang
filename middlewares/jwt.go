@@ -16,12 +16,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type JWTMiddleWare struct {
+type JWTMiddleware struct {
 	cacheService services.ICache
 }
 
-func NewJWTMiddleWare(cacheService services.ICache) *JWTMiddleWare {
-	return &JWTMiddleWare{
+func NewJWTMiddleWare(cacheService services.ICache) *JWTMiddleware {
+	return &JWTMiddleware{
 		cacheService: cacheService,
 	}
 }
@@ -136,7 +136,7 @@ func DefaultSkipper(echo.Context) bool {
 //
 // See: https://jwt.io/introduction
 // See `JWTConfig.TokenLookup`
-func (jmr *JWTMiddleWare) JWT(key interface{}) echo.MiddlewareFunc {
+func (jmr *JWTMiddleware) JWT(key interface{}) echo.MiddlewareFunc {
 	c := DefaultJWTConfig
 	c.SigningKey = key
 	return jmr.JWTWithConfig(c)
@@ -144,7 +144,7 @@ func (jmr *JWTMiddleWare) JWT(key interface{}) echo.MiddlewareFunc {
 
 // JWTWithConfig returns a JWT auth middleware with config.
 // See: `JWT()`.
-func (jmr *JWTMiddleWare) JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
+func (jmr *JWTMiddleware) JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
 	// Defaults
 	if config.Skipper == nil {
 		config.Skipper = DefaultJWTConfig.Skipper

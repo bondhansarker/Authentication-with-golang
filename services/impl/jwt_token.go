@@ -13,17 +13,17 @@ import (
 	"github.com/google/uuid"
 )
 
-type tokenService struct {
+type jwtService struct {
 	cacheService services.ICache
 }
 
-func NewJWTTokenService(cacheService services.ICache) services.IToken {
-	return &tokenService{
+func NewJWTService(cacheService services.ICache) services.IToken {
+	return &jwtService{
 		cacheService: cacheService,
 	}
 }
 
-func (jts *tokenService) CreateToken(userId int) (*types.JwtToken, error) {
+func (jts *jwtService) CreateToken(userId int) (*types.JwtToken, error) {
 	token := &types.JwtToken{}
 	jwtConf := config.Jwt()
 	token.UserID = userId
@@ -64,7 +64,7 @@ func (jts *tokenService) CreateToken(userId int) (*types.JwtToken, error) {
 	return token, nil
 }
 
-func (jts *tokenService) StoreTokenUuid(userId int, token *types.JwtToken) error {
+func (jts *jwtService) StoreTokenUuid(userId int, token *types.JwtToken) error {
 	now := time.Now().Unix()
 	redisConf := config.Redis()
 	err := jts.cacheService.Set(
@@ -86,6 +86,6 @@ func (jts *tokenService) StoreTokenUuid(userId int, token *types.JwtToken) error
 	return nil
 }
 
-func (jts *tokenService) DeleteTokenUuid(uuid ...string) error {
+func (jts *jwtService) DeleteTokenUuid(uuid ...string) error {
 	return jts.cacheService.Del(uuid...)
 }

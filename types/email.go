@@ -7,10 +7,6 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-type UserCreateEmailReq struct {
-	To string `json:"to"`
-}
-
 type ForgotPasswordResp struct {
 	UserID   int    `json:"user_id,omitempty"`
 	Token    string `json:"token,omitempty"`

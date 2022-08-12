@@ -19,29 +19,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserService struct {
+type userService struct {
 	cacheService   services.ICache
 	userRepository repositories.IUserRepository
 }
 
 func NewUserService(cacheService services.ICache,
 	userRepository repositories.IUserRepository) services.IUserService {
-	return &UserService{
+	return &userService{
 		cacheService:   cacheService,
 		userRepository: userRepository,
 	}
 }
 
-func encryptPassword(plainPass string) string {
-	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(plainPass), 8)
-	return string(hashedPass)
-}
-
-func passwordResetSecret(user *models.User) string {
-	return *user.Password + strconv.Itoa(int(user.CreatedAt.Unix()))
-}
-
-func (us *UserService) CreateUser(userData interface{}) (*types.UserResp, error) {
+func (us *userService) CreateUser(userData interface{}) (*types.UserResp, error) {
 	user, err := us.userRepository.New(userData)
 	if err != nil {
 		log.Error(err)
@@ -60,7 +51,7 @@ func (us *UserService) CreateUser(userData interface{}) (*types.UserResp, error)
 	return us.GetUserFromCache(user.ID, false)
 }
 
-func (us *UserService) UpdateUser(userData interface{}) (*types.UserResp, error) {
+func (us *userService) UpdateUser(userData interface{}) (*types.UserResp, error) {
 	user, err := us.userRepository.New(userData)
 	if err != nil {
 		log.Error(err)
@@ -81,7 +72,7 @@ func (us *UserService) UpdateUser(userData interface{}) (*types.UserResp, error)
 	return userResp, nil
 }
 
-func (us *UserService) UpdateLastLogin(userId int) error {
+func (us *userService) UpdateLastLogin(userId int) error {
 	lastLoginAt := time.Now().UTC()
 	data := map[string]interface{}{
 		"last_login_at": lastLoginAt,
@@ -93,7 +84,7 @@ func (us *UserService) UpdateLastLogin(userId int) error {
 	return nil
 }
 
-func (us *UserService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types.UserResp, error) {
+func (us *userService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types.UserResp, error) {
 	user, err := us.userRepository.New(userStat)
 	if err != nil {
 		log.Error(err)
@@ -123,7 +114,7 @@ func (us *UserService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types
 	return userResp, nil
 }
 
-func (us *UserService) UpdateUserCache(userId int) (*types.UserResp, error) {
+func (us *userService) UpdateUserCache(userId int) (*types.UserResp, error) {
 	userResp := &types.UserResp{}
 	user, err := us.userRepository.FindBy("id", userId)
 	if err != nil {
@@ -146,7 +137,7 @@ func (us *UserService) UpdateUserCache(userId int) (*types.UserResp, error) {
 	return userResp, nil
 }
 
-func (us *UserService) GetUserByEmail(email string) (*models.User, error) {
+func (us *userService) GetUserByEmail(email string) (*models.User, error) {
 	user, err := us.userRepository.FindBy("email", email)
 	if err != nil {
 		log.Error(err)
@@ -155,7 +146,7 @@ func (us *UserService) GetUserByEmail(email string) (*models.User, error) {
 	return user, nil
 }
 
-func (us *UserService) GetUserById(id int) (*models.User, error) {
+func (us *userService) GetUserById(id int) (*models.User, error) {
 	user, err := us.userRepository.FindBy("id", id)
 	if err != nil {
 		log.Error(err)
@@ -164,7 +155,7 @@ func (us *UserService) GetUserById(id int) (*models.User, error) {
 	return user, nil
 }
 
-func (us *UserService) GetUserFromCache(userId int, checkInCache bool) (*types.UserResp, error) {
+func (us *userService) GetUserFromCache(userId int, checkInCache bool) (*types.UserResp, error) {
 	userResp := &types.UserResp{}
 	var err error
 
@@ -184,7 +175,7 @@ func (us *UserService) GetUserFromCache(userId int, checkInCache bool) (*types.U
 	return userResp, nil
 }
 
-func (us *UserService) GetUsers(pagination *types.Pagination) error {
+func (us *userService) GetUsers(pagination *types.Pagination) error {
 	pagination.QueryTargetFields = []string{"name", "user_name", "email"}
 	users, err := us.userRepository.All(pagination)
 	if err != nil {
@@ -201,7 +192,7 @@ func (us *UserService) GetUsers(pagination *types.Pagination) error {
 	return nil
 }
 
-func (us *UserService) DeleteUser(id int) error {
+func (us *userService) DeleteUser(id int) error {
 	if err := us.userRepository.Delete(id); err != nil {
 		log.Error(err)
 		return err
@@ -209,7 +200,7 @@ func (us *UserService) DeleteUser(id int) error {
 	return nil
 }
 
-func (us *UserService) ChangePassword(userId int, req *types.ChangePasswordReq) error {
+func (us *userService) ChangePassword(userId int, req *types.ChangePasswordReq) error {
 	user, err := us.GetUserById(userId)
 	if err != nil {
 		log.Error(err)
@@ -234,7 +225,7 @@ func (us *UserService) ChangePassword(userId int, req *types.ChangePasswordReq) 
 	return nil
 }
 
-func (us *UserService) ForgotPassword(email string) (*types.ForgotPasswordResp, error) {
+func (us *userService) ForgotPassword(email string) (*types.ForgotPasswordResp, error) {
 	user, err := us.GetUserByEmail(email)
 	if err != nil {
 		log.Error(err)
@@ -275,7 +266,7 @@ func (us *UserService) ForgotPassword(email string) (*types.ForgotPasswordResp, 
 	return &resp, nil
 }
 
-func (us *UserService) VerifyResetPassword(req *types.VerifyResetPasswordReq) error {
+func (us *userService) VerifyResetPassword(req *types.VerifyResetPasswordReq) error {
 	user, err := us.GetUserById(req.ID)
 	if err != nil {
 		log.Error(err)
@@ -317,7 +308,7 @@ func (us *UserService) VerifyResetPassword(req *types.VerifyResetPasswordReq) er
 	return nil
 }
 
-func (us *UserService) ResetPassword(req *types.ResetPasswordReq) error {
+func (us *userService) ResetPassword(req *types.ResetPasswordReq) error {
 	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 8)
 	data := map[string]interface{}{
 		"password": hashedPass,
@@ -330,7 +321,7 @@ func (us *UserService) ResetPassword(req *types.ResetPasswordReq) error {
 	return nil
 }
 
-func (us *UserService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPasswordOtpResp, error) {
+func (us *userService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPasswordOtpResp, error) {
 	redisConf := config.Redis()
 	nonceKey := redisConf.OtpNoncePrefix + consts.UserForgotPasswordOtp + nonce
 
@@ -361,7 +352,7 @@ func (us *UserService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPassw
 	return resp, nil
 }
 
-func (us *UserService) CreateForgotPasswordOtp(userId int, email string) (*types.ForgotPasswordOtpResp, error) {
+func (us *userService) CreateForgotPasswordOtp(userId int, email string) (*types.ForgotPasswordOtpResp, error) {
 	redisConf := config.Redis()
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
 
@@ -388,7 +379,7 @@ func (us *UserService) CreateForgotPasswordOtp(userId int, email string) (*types
 	return &types.ForgotPasswordOtpResp{OtpNonce: nonce}, nil
 }
 
-func (us *UserService) VerifyForgotPasswordOtp(data *types.ForgotPasswordOtpReq) (bool, error) {
+func (us *userService) VerifyForgotPasswordOtp(data *types.ForgotPasswordOtpReq) (bool, error) {
 	redisConf := config.Redis()
 
 	nonceKey := redisConf.OtpNoncePrefix + consts.UserForgotPasswordOtp + data.Nonce
@@ -410,4 +401,15 @@ func (us *UserService) VerifyForgotPasswordOtp(data *types.ForgotPasswordOtpReq)
 	}
 
 	return true, nil
+}
+
+// private
+
+func encryptPassword(plainPass string) string {
+	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(plainPass), 8)
+	return string(hashedPass)
+}
+
+func passwordResetSecret(user *models.User) string {
+	return *user.Password + strconv.Itoa(int(user.CreatedAt.Unix()))
 }

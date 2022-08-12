@@ -10,14 +10,14 @@ import (
 
 type Routes struct {
 	echo            *echo.Echo
-	middleware      *middlewares.JWTMiddleWare
+	middleware      *middlewares.JWTMiddleware
 	authController  *controllers.AuthController
 	userController  *controllers.UserController
 	adminController *controllers.AdminController
 }
 
 func New(echo *echo.Echo,
-	middleware *middlewares.JWTMiddleWare,
+	middleware *middlewares.JWTMiddleware,
 	authController *controllers.AuthController,
 	userController *controllers.UserController,
 	adminController *controllers.AdminController) *Routes {

@@ -1,10 +1,8 @@
 package types
 
 import (
-	"auth/errors"
-	"regexp"
-
 	"auth/consts"
+	"auth/errors"
 	"auth/utils/methods"
 
 	v "github.com/go-ozzo/ozzo-validation/v4"
@@ -57,7 +55,7 @@ func (cp ChangePasswordReq) Validate() error {
 	)
 }
 
-func (cp *ChangePasswordReq) isValidPasswordFormat(value interface{}) error {
+func (cp ChangePasswordReq) isValidPasswordFormat(value interface{}) error {
 	return methods.ValidatePassword(cp.NewPassword)
 }
 
@@ -101,34 +99,6 @@ func (rp ResetPasswordReq) Validate() error {
 
 func (rp ResetPasswordReq) isValidPasswordFormat(value interface{}) error {
 	return methods.ValidatePassword(rp.Password)
-}
-
-type OtpReq struct {
-	Nonce string `json:"nonce"`
-	Otp   string `json:"otp"`
-}
-
-func (o OtpReq) Validate() error {
-	return v.ValidateStruct(&o,
-		v.Field(&o.Otp,
-			v.Match(regexp.MustCompile("^[0-9]{6}$")).Error("invalid otp"),
-		),
-		v.Field(&o.Nonce, v.Required, is.UUID.Error("invalid nonce")),
-	)
-}
-
-type OtpResp struct {
-	OtpNonce string `json:"otp_nonce"`
-}
-
-type OtpResendReq struct {
-	Nonce string `json:"nonce"`
-}
-
-func (o OtpResendReq) Validate() error {
-	return v.ValidateStruct(&o,
-		v.Field(&o.Nonce, v.Required, is.UUID.Error("invalid nonce")),
-	)
 }
 
 type SocialLoginReq struct {

@@ -16,17 +16,17 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepository struct {
+type userRepository struct {
 	dbClient *gorm.DB
 }
 
 func NewUserRepository(dbClient *gorm.DB) repositories.IUserRepository {
-	return &UserRepository{
+	return &userRepository{
 		dbClient: dbClient,
 	}
 }
 
-func (ur *UserRepository) New(userData interface{}) (*models.User, error) {
+func (ur *userRepository) New(userData interface{}) (*models.User, error) {
 	user := &models.User{}
 	err := methods.CopyStruct(userData, &user)
 	if err != nil {
@@ -37,7 +37,7 @@ func (ur *UserRepository) New(userData interface{}) (*models.User, error) {
 	return user, nil
 }
 
-func (ur *UserRepository) Create(user *models.User) error {
+func (ur *userRepository) Create(user *models.User) error {
 	if err := ur.dbClient.Create(&user).Error; err != nil {
 		log.Error(err)
 		return errors.Create(consts.User)
@@ -45,7 +45,7 @@ func (ur *UserRepository) Create(user *models.User) error {
 	return nil
 }
 
-func (ur *UserRepository) Update(user *models.User) error {
+func (ur *userRepository) Update(user *models.User) error {
 	res := ur.dbClient.Model(&models.User{}).
 		Where("id = ?", user.ID).
 		Omit("email", "password", "login_provider").
@@ -60,7 +60,7 @@ func (ur *UserRepository) Update(user *models.User) error {
 	return nil
 }
 
-func (ur *UserRepository) FindBy(field string, value interface{}) (*models.User, error) {
+func (ur *userRepository) FindBy(field string, value interface{}) (*models.User, error) {
 	user := models.User{}
 	query := fmt.Sprintf("%s = ?", field)
 	if err := ur.dbClient.Where(query, value).First(&user).Error; err != nil {
@@ -70,7 +70,7 @@ func (ur *UserRepository) FindBy(field string, value interface{}) (*models.User,
 	return &user, nil
 }
 
-func (ur *UserRepository) All(pagination *types.Pagination) ([]*models.User, error) {
+func (ur *userRepository) All(pagination *types.Pagination) ([]*models.User, error) {
 	users := make([]*models.User, 0)
 	tableName := consts.Users
 	paginationQuery := paginations.GenerateFilteringCondition(ur.dbClient, tableName, pagination, false)
@@ -93,7 +93,7 @@ func (ur *UserRepository) All(pagination *types.Pagination) ([]*models.User, err
 	return users, nil
 }
 
-func (ur *UserRepository) Count(paginationQuery *gorm.DB) (int64, error) {
+func (ur *userRepository) Count(paginationQuery *gorm.DB) (int64, error) {
 	var count int64 = 0
 	if err := paginationQuery.Model(&models.User{}).Count(&count).Error; err != nil {
 		log.Error(err)
@@ -102,7 +102,7 @@ func (ur *UserRepository) Count(paginationQuery *gorm.DB) (int64, error) {
 	return count, nil
 }
 
-func (ur *UserRepository) UpdateByInterface(id int, data map[string]interface{}) error {
+func (ur *userRepository) UpdateByInterface(id int, data map[string]interface{}) error {
 	if err := ur.dbClient.Model(&models.User{}).Where("id = ?", id).Updates(data).Error; err != nil {
 		log.Error(err)
 		return err
@@ -110,7 +110,7 @@ func (ur *UserRepository) UpdateByInterface(id int, data map[string]interface{})
 	return nil
 }
 
-func (ur *UserRepository) Delete(id int) error {
+func (ur *userRepository) Delete(id int) error {
 	res := ur.dbClient.Where("id = ?", id).Delete(&models.User{})
 	if res.RowsAffected == 0 {
 		return errors.NotFound(consts.User)

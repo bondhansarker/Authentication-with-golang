@@ -47,10 +47,10 @@ func serve(cmd *cobra.Command, args []string) {
 
 	// services
 	var cacheSvc = serviceImpl.NewRedisService(redisClient)
-	var tokenSvc = serviceImpl.NewJWTTokenService(cacheSvc)
+	var tokenSvc = serviceImpl.NewJWTService(cacheSvc)
 	var userSvc = serviceImpl.NewUserService(cacheSvc, userRepo)
-	var OAuthSvc = serviceImpl.NewOAuthService(userSvc)
-	var authSvc = serviceImpl.NewAuthService(cacheSvc, tokenSvc, userSvc, OAuthSvc)
+	var oAuthLoginSvc = serviceImpl.NewOAuthService(userSvc)
+	var authSvc = serviceImpl.NewAuthService(cacheSvc, tokenSvc, userSvc, oAuthLoginSvc)
 
 	// middlewares
 	var middleware = middlewares.NewJWTMiddleWare(cacheSvc)

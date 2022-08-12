@@ -2,6 +2,7 @@ package types
 
 import (
 	"auth/errors"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"regexp"
 	"strings"
 
@@ -13,7 +14,6 @@ import (
 	"gorm.io/gorm"
 
 	v "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
 type LoggedInUser struct {
@@ -54,23 +54,6 @@ type UserCreateUpdateReq struct {
 	LoginProvider string `json:"login_provider"`
 }
 
-type UserStatUpdateReq struct {
-	ID              int    `json:"id"`
-	DownloadCount   *int64 `json:"download_count" `
-	UploadCount     *int64 `json:"upload_count"`
-	IncrementUpload *bool  `json:"increment_upload"`
-}
-
-type ProfilePicUpdateReq struct {
-	ID                  int     `json:"id"`
-	ProfilePic          *string `json:"profile_pic"`
-	ProfilePicExtension *string `json:"profile_pic_extension"`
-}
-
-func (u UserCreateUpdateReq) isCreating() bool {
-	return u.ID == 0
-}
-
 func (u UserCreateUpdateReq) Validate() error {
 	return v.ValidateStruct(&u,
 		v.Field(&u.Name,
@@ -102,6 +85,23 @@ func (u UserCreateUpdateReq) Validate() error {
 			v.By(u.loginProviderValid),
 		),
 	)
+}
+
+type UserStatUpdateReq struct {
+	ID              int    `json:"id"`
+	DownloadCount   *int64 `json:"download_count" `
+	UploadCount     *int64 `json:"upload_count"`
+	IncrementUpload *bool  `json:"increment_upload"`
+}
+
+type ProfilePicUpdateReq struct {
+	ID                  int     `json:"id"`
+	ProfilePic          *string `json:"profile_pic"`
+	ProfilePicExtension *string `json:"profile_pic_extension"`
+}
+
+func (u UserCreateUpdateReq) isCreating() bool {
+	return u.ID == 0
 }
 
 func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
