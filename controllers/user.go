@@ -69,10 +69,9 @@ func (uc *UserController) UpdateUser(c echo.Context) error {
 
 func (uc *UserController) UpdateProfilePic(c echo.Context) error {
 	var req types.ProfilePicUpdateReq
-	var user *types.LoggedInUser
-	var err error
 
-	if user, err = GetUserFromHeader(&c); err != nil {
+	user, err := GetUserFromHeader(&c)
+	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}
@@ -95,10 +94,9 @@ func (uc *UserController) UpdateProfilePic(c echo.Context) error {
 
 func (uc *UserController) UpdateUserStat(c echo.Context) error {
 	var req types.UserStatUpdateReq
-	var user *types.LoggedInUser
-	var err error
 
-	if user, err = GetUserFromHeader(&c); err != nil {
+	user, err := GetUserFromHeader(&c)
+	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}
@@ -126,7 +124,7 @@ func (uc *UserController) ChangePassword(c echo.Context) error {
 		return c.JSON(messages.BuildResponseBy(err))
 	}
 
-	req := &types.ChangePasswordReq{}
+	req := types.ChangePasswordReq{}
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
@@ -142,7 +140,7 @@ func (uc *UserController) ChangePassword(c echo.Context) error {
 		return c.JSON(messages.BuildResponseBy(errors.SamePassword()))
 	}
 
-	if err := uc.userService.ChangePassword(loggedInUser.ID, req); err != nil {
+	if err := uc.userService.ChangePassword(loggedInUser.ID, &req); err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}
@@ -151,7 +149,7 @@ func (uc *UserController) ChangePassword(c echo.Context) error {
 }
 
 func (uc *UserController) ForgotPassword(c echo.Context) error {
-	req := &types.ForgotPasswordReq{}
+	req := types.ForgotPasswordReq{}
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
@@ -173,7 +171,7 @@ func (uc *UserController) ForgotPassword(c echo.Context) error {
 }
 
 func (uc *UserController) VerifyResetPassword(c echo.Context) error {
-	req := &types.VerifyResetPasswordReq{}
+	req := types.VerifyResetPasswordReq{}
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
@@ -185,7 +183,7 @@ func (uc *UserController) VerifyResetPassword(c echo.Context) error {
 		return c.JSON(messages.BuildValidationResponseBy(err, consts.User))
 	}
 
-	if err := uc.userService.VerifyResetPassword(req); err != nil {
+	if err := uc.userService.VerifyResetPassword(&req); err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}
@@ -194,7 +192,7 @@ func (uc *UserController) VerifyResetPassword(c echo.Context) error {
 }
 
 func (uc *UserController) ResendForgotPasswordOtp(c echo.Context) error {
-	req := &types.ForgotPasswordOtpResendReq{}
+	req := types.ForgotPasswordOtpResendReq{}
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
@@ -216,7 +214,7 @@ func (uc *UserController) ResendForgotPasswordOtp(c echo.Context) error {
 }
 
 func (uc *UserController) ResetPassword(c echo.Context) error {
-	req := &types.ResetPasswordReq{}
+	req := types.ResetPasswordReq{}
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
@@ -238,7 +236,7 @@ func (uc *UserController) ResetPassword(c echo.Context) error {
 		return c.JSON(messages.BuildResponseBy(err))
 	}
 
-	if err := uc.userService.ResetPassword(req); err != nil {
+	if err := uc.userService.ResetPassword(&req); err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
 	}

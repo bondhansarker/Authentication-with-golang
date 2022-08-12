@@ -17,7 +17,7 @@ import (
 )
 
 type LoggedInUser struct {
-	ID          int    `json:"user_id"`
+	ID          int    `json:"id"`
 	AccessUuid  string `json:"access_uuid"`
 	RefreshUuid string `json:"refresh_uuid"`
 	IsAdmin     *bool  `json:"is_admin"`
@@ -85,19 +85,6 @@ func (u UserCreateUpdateReq) Validate() error {
 			v.By(u.loginProviderValid),
 		),
 	)
-}
-
-type UserStatUpdateReq struct {
-	ID              int    `json:"id"`
-	DownloadCount   *int64 `json:"download_count" `
-	UploadCount     *int64 `json:"upload_count"`
-	IncrementUpload *bool  `json:"increment_upload"`
-}
-
-type ProfilePicUpdateReq struct {
-	ID                  int     `json:"id"`
-	ProfilePic          *string `json:"profile_pic"`
-	ProfilePicExtension *string `json:"profile_pic_extension"`
 }
 
 func (u UserCreateUpdateReq) isCreating() bool {
@@ -214,4 +201,17 @@ func (eid IdUrlParam) Validate() error {
 	return v.ValidateStruct(&eid,
 		v.Field(&eid.ID, v.Match(regexp.MustCompile("^[0-9]+$")).Error("invalid id")),
 	)
+}
+
+type UserStatUpdateReq struct {
+	ID              int    `json:"id"`
+	DownloadCount   *int64 `json:"download_count" `
+	UploadCount     *int64 `json:"upload_count"`
+	IncrementUpload *bool  `json:"increment_upload"`
+}
+
+type ProfilePicUpdateReq struct {
+	ID                  int     `json:"id"`
+	ProfilePic          *string `json:"profile_pic"`
+	ProfilePicExtension *string `json:"profile_pic_extension"`
 }

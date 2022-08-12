@@ -73,7 +73,7 @@ func (ac *AuthController) Login(c echo.Context) error {
 }
 
 func (ac *AuthController) SocialLogin(c echo.Context) error {
-	var req *types.SocialLoginReq
+	var req types.SocialLoginReq
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
@@ -91,7 +91,7 @@ func (ac *AuthController) SocialLogin(c echo.Context) error {
 	fmt.Println(req.Token)
 	fmt.Println("====================================================")
 
-	resp, err := ac.authService.SocialLogin(req)
+	resp, err := ac.authService.SocialLogin(&req)
 	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))
