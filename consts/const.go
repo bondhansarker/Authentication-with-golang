@@ -13,28 +13,25 @@ const (
 	HeaderUserEmailAddressKey = "hink-user-email"
 	HeaderIsAdminKey          = "hink-admin"
 
-	// Domains
+	// Model keywords
 	User  = "user"
 	Users = "users"
 
 	// Reserved keywords
-	ResetToken       = "reset token"
-	VerifyToken      = "verify token"
-	RefreshToken     = "refresh token"
-	AccessToken      = "access token"
-	JWTToken         = "jwt token"
-	OldToken         = "old token"
-	SocialLoginToken = "social login token"
-	OTP              = "OTP"
-	OTPNonce         = "OTP nonce"
-	Password         = "password"
-	MetaData         = "metadata"
-	DefaultInt       = 0
-
-	UserCreateMailApiPath            = "consumer/user-create"
-	UserForgotPasswordWithOtpApiPath = "forgot-password/otp"
-
+	ResetToken            = "reset token"
+	RefreshToken          = "refresh token"
+	AccessToken           = "access token"
+	JWTToken              = "jwt token"
+	OldToken              = "old token"
+	SocialLoginToken      = "social login token"
+	OTP                   = "OTP"
+	OTPNonce              = "OTP nonce"
+	Password              = "password"
+	MetaData              = "metadata"
 	UserForgotPasswordOtp = "forgot_"
+
+	// default values
+	DefaultInt = 0
 )
 
 func LoginProviders() map[string]bool {
