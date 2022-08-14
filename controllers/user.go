@@ -83,7 +83,7 @@ func (uc *UserController) UpdateProfilePic(c echo.Context) error {
 
 	req.ID = user.ID
 
-	userResp, err := uc.userService.UpdateUser(&req)
+	userResp, err := uc.userService.UpdateUserProfilePic(&req)
 	if err != nil {
 		log.Error(err)
 		return c.JSON(messages.BuildResponseBy(err))

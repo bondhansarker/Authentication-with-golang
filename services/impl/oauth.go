@@ -38,10 +38,9 @@ func (ols *oAuthService) CreateUserWithProvider(email, provider string) (int, er
 	user := &types.UserResp{}
 
 	if err != nil && methods.IsSameError(errors.NotFound(consts.User), err) {
-		req := &types.SocialLoginData{
+		req := &types.UserCreateUpdateReq{
 			Email:         email,
 			LoginProvider: provider,
-			Verified:      true,
 		}
 		user, err = ols.userService.CreateUser(req)
 		if err != nil {

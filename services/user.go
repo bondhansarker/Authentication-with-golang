@@ -6,8 +6,9 @@ import (
 )
 
 type IUserService interface {
-	CreateUser(userData interface{}) (*types.UserResp, error)
-	UpdateUser(userData interface{}) (*types.UserResp, error)
+	CreateUser(userCreateReq *types.UserCreateUpdateReq) (*types.UserResp, error)
+	UpdateUser(userUpdateReq *types.UserCreateUpdateReq) (*types.UserResp, error)
+	UpdateUserProfilePic(profilePicData *types.ProfilePicUpdateReq) (*types.UserResp, error)
 	UpdateUserStat(userStat *types.UserStatUpdateReq) (*types.UserResp, error)
 	UpdateUserCache(userId int) (*types.UserResp, error)
 	UpdateLastLogin(userId int) error

@@ -32,8 +32,8 @@ func NewUserService(cacheService services.ICache,
 	}
 }
 
-func (us *userService) CreateUser(userData interface{}) (*types.UserResp, error) {
-	user, err := us.userRepository.New(userData)
+func (us *userService) CreateUser(userCreateReq *types.UserCreateUpdateReq) (*types.UserResp, error) {
+	user, err := us.userRepository.New(userCreateReq)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -41,6 +41,8 @@ func (us *userService) CreateUser(userData interface{}) (*types.UserResp, error)
 
 	if user.LoginProvider == consts.LoginProviderHink {
 		*user.Password = encryptPassword(*user.Password)
+	} else {
+		*user.Verified = true
 	}
 
 	if err := us.userRepository.Create(user); err != nil {
@@ -51,25 +53,13 @@ func (us *userService) CreateUser(userData interface{}) (*types.UserResp, error)
 	return us.GetUserFromCache(user.ID, false)
 }
 
-func (us *userService) UpdateUser(userData interface{}) (*types.UserResp, error) {
-	user, err := us.userRepository.New(userData)
+func (us *userService) UpdateUser(userUpdateReq *types.UserCreateUpdateReq) (*types.UserResp, error) {
+	user, err := us.userRepository.New(userUpdateReq)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-
-	if err = us.userRepository.Update(user); err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	userResp, err := us.UpdateUserCache(user.ID)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	return userResp, nil
+	return us.update(user)
 }
 
 func (us *userService) UpdateLastLogin(userId int) error {
@@ -105,13 +95,16 @@ func (us *userService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types
 		}
 	}
 
-	userResp, err := us.UpdateUser(user)
+	return us.update(user)
+}
+
+func (us *userService) UpdateUserProfilePic(userProfilePic *types.ProfilePicUpdateReq) (*types.UserResp, error) {
+	user, err := us.userRepository.New(userProfilePic)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-
-	return userResp, nil
+	return us.update(user)
 }
 
 func (us *userService) UpdateUserCache(userId int) (*types.UserResp, error) {
@@ -404,6 +397,14 @@ func (us *userService) VerifyForgotPasswordOtp(data *types.ForgotPasswordOtpReq)
 }
 
 // private
+
+func (us *userService) update(user *models.User) (*types.UserResp, error) {
+	if err := us.userRepository.Update(user); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return us.UpdateUserCache(user.ID)
+}
 
 func encryptPassword(plainPass string) string {
 	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(plainPass), 8)
