@@ -102,6 +102,36 @@ func (ac *AdminController) UpdateUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, userResp)
 }
 
+func (ac *AdminController) DeleteUser(c echo.Context) error {
+	checkAdminAuthorization(c)
+	var req types.UserDeleteReq
+	if err := c.Bind(&req); err != nil {
+		log.Error(err)
+		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
+	}
+
+	id, err := methods.ParseParam(c, "id")
+	if err != nil {
+		log.Error(err)
+		return c.JSON(messages.BuildResponseBy(err))
+	}
+
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		log.Error(err)
+		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
+	}
+
+	req.ID = userId
+
+	if err := ac.userService.DeleteUser(&req); err != nil {
+		log.Error(err)
+		return c.JSON(messages.BuildResponseBy(err))
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
 // private
 
 func checkAdminAuthorization(c echo.Context) error {

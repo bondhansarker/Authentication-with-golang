@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"auth/config"
-	"auth/models"
 	"auth/utils/log"
 
 	"gorm.io/driver/mysql"
@@ -50,9 +49,9 @@ func Db() {
 		sqlDb.SetConnMaxLifetime(conf.MaxConnLifetime * time.Second)
 	}
 
-	dB.AutoMigrate(
-		&models.User{},
-	)
+	//dB.AutoMigrate(
+	//	&models.User{},
+	//)
 	log.Info("mysql connection successful...")
 }
 

@@ -66,4 +66,5 @@ func (r *Routes) registerRoutes(e *echo.Echo) {
 	v1.GET("/users", r.adminController.FindUsers, middlewares.Auth(r.middleware))
 	v1.GET("/users/:id", r.adminController.FindUser, middlewares.Auth(r.middleware))
 	v1.PATCH("/users/:id", r.adminController.UpdateUser, middlewares.Auth(r.middleware))
+	v1.DELETE("/users/:id", r.adminController.DeleteUser, middlewares.Auth(r.middleware))
 }

@@ -62,16 +62,14 @@ func (us *userService) UpdateUser(userUpdateReq *types.UserCreateUpdateReq) (*ty
 	return us.update(user)
 }
 
-func (us *userService) UpdateLastLogin(userId int) error {
-	lastLoginAt := time.Now().UTC()
-	data := map[string]interface{}{
-		"last_login_at": lastLoginAt,
-	}
-	if err := us.userRepository.UpdateByInterface(userId, data); err != nil {
+func (us *userService) UpdateUserProfilePic(userProfilePic *types.ProfilePicUpdateReq) (*types.UserResp, error) {
+
+	user, err := us.userRepository.New(userProfilePic)
+	if err != nil {
 		log.Error(err)
-		return errors.Update(consts.MetaData)
+		return nil, err
 	}
-	return nil
+	return us.update(user)
 }
 
 func (us *userService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types.UserResp, error) {
@@ -98,13 +96,16 @@ func (us *userService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types
 	return us.update(user)
 }
 
-func (us *userService) UpdateUserProfilePic(userProfilePic *types.ProfilePicUpdateReq) (*types.UserResp, error) {
-	user, err := us.userRepository.New(userProfilePic)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+func (us *userService) UpdateLastLogin(userId int) error {
+	lastLoginAt := time.Now().UTC()
+	data := map[string]interface{}{
+		"last_login_at": lastLoginAt,
 	}
-	return us.update(user)
+	if err := us.userRepository.UpdateByInterface(userId, data); err != nil {
+		log.Error(err)
+		return errors.Update(consts.MetaData)
+	}
+	return nil
 }
 
 func (us *userService) UpdateUserCache(userId int) (*types.UserResp, error) {
@@ -128,6 +129,15 @@ func (us *userService) UpdateUserCache(userId int) (*types.UserResp, error) {
 	}
 
 	return userResp, nil
+}
+
+func (us *userService) DeleteUser(userDeleteReq *types.UserDeleteReq) error {
+	user, err := us.userRepository.New(userDeleteReq)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	return us.userRepository.Delete(user.ID)
 }
 
 func (us *userService) GetUserByEmail(email string) (*models.User, error) {
@@ -182,14 +192,6 @@ func (us *userService) GetUsers(pagination *types.Pagination) error {
 		return err
 	}
 	pagination.Rows = usersResp
-	return nil
-}
-
-func (us *userService) DeleteUser(id int) error {
-	if err := us.userRepository.Delete(id); err != nil {
-		log.Error(err)
-		return err
-	}
 	return nil
 }
 

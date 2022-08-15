@@ -12,11 +12,11 @@ type IUserService interface {
 	UpdateUserStat(userStat *types.UserStatUpdateReq) (*types.UserResp, error)
 	UpdateUserCache(userId int) (*types.UserResp, error)
 	UpdateLastLogin(userId int) error
+	DeleteUser(userDeleteReq *types.UserDeleteReq) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserById(id int) (*models.User, error)
 	GetUserFromCache(userId int, checkInCache bool) (*types.UserResp, error)
 	GetUsers(pagination *types.Pagination) error
-	DeleteUser(id int) error
 	ChangePassword(userId int, req *types.ChangePasswordReq) error
 	ForgotPassword(email string) (*types.ForgotPasswordResp, error)
 	VerifyResetPassword(req *types.VerifyResetPasswordReq) error

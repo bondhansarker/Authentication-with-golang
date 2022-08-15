@@ -215,3 +215,8 @@ type ProfilePicUpdateReq struct {
 	ProfilePic          *string `json:"profile_pic"`
 	ProfilePicExtension *string `json:"profile_pic_extension"`
 }
+
+type UserDeleteReq struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
+}
