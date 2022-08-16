@@ -9,12 +9,12 @@ import (
 
 type body map[string]interface{}
 
-func BuildValidationResponseBy(err error, entity string) (int, body) {
+func ValidationErrors(err error, entity string) (int, body) {
 	message := fmt.Sprintf("failed to validate the fields of the %v", entity)
 	return validationResponse(message, err)
 }
 
-func BuildResponseBy(err error) (int, body) {
+func BuildBody(err error) (int, body) {
 	message := err.Error()
 	return readFromMap(message)
 }

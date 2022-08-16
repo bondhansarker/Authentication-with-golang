@@ -34,20 +34,20 @@ func (ac *AuthController) Signup(c echo.Context) error {
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
 	}
 
 	req.ID = 0 // remove `id`(if provided somehow) while creation
 
 	if err = req.Validate(); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildValidationResponseBy(err, consts.User))
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
 	_, err = ac.authService.SignUp(&req)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(err))
+		return c.JSON(response.BuildBody(err))
 	}
 
 	return c.NoContent(http.StatusCreated)
@@ -58,18 +58,18 @@ func (ac *AuthController) Login(c echo.Context) error {
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
 	}
 
 	if err := req.Validate(); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildValidationResponseBy(err, consts.User))
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
 	res, err := ac.authService.Login(&req)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(err))
+		return c.JSON(response.BuildBody(err))
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -79,12 +79,12 @@ func (ac *AuthController) SocialLogin(c echo.Context) error {
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
 	}
 
 	if err := req.Validate(); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildValidationResponseBy(err, consts.User))
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
 	fmt.Println("====================================================")
@@ -96,7 +96,7 @@ func (ac *AuthController) SocialLogin(c echo.Context) error {
 	resp, err := ac.authService.SocialLogin(&req)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(err))
+		return c.JSON(response.BuildBody(err))
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -108,12 +108,12 @@ func (ac *AuthController) Logout(c echo.Context) error {
 
 	if user, err = GetUserFromContext(&c); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(err))
+		return c.JSON(response.BuildBody(err))
 	}
 
 	if err := ac.authService.Logout(user); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(err))
+		return c.JSON(response.BuildBody(err))
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -123,13 +123,13 @@ func (ac *AuthController) RefreshToken(c echo.Context) error {
 
 	if err := c.Bind(&token); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(err))
+		return c.JSON(response.BuildBody(err))
 	}
 
 	res, err := ac.authService.RefreshToken(token.RefreshToken)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(err))
+		return c.JSON(response.BuildBody(err))
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -138,13 +138,13 @@ func (ac *AuthController) VerifyToken(c echo.Context) error {
 	accessToken, err := methods.AccessTokenFromHeader(c)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(err))
+		return c.JSON(response.BuildBody(err))
 	}
 
 	res, err := ac.authService.VerifyToken(accessToken)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildResponseBy(err))
+		return c.JSON(response.BuildBody(err))
 	}
 
 	return c.JSON(http.StatusOK, res)
