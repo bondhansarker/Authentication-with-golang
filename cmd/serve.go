@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"os"
+
 	"auth/models"
 	repoImpl "auth/repositories/impl"
+	"auth/rest_errors"
 	serviceImpl "auth/services/impl"
-	"os"
 
 	"auth/config"
 	"auth/connection"
@@ -32,6 +34,7 @@ func serve(cmd *cobra.Command, args []string) {
 
 	// config
 	config.Load()
+	rest_errors.InitErrorMap()
 
 	// connection
 	connection.Redis()
@@ -43,7 +46,7 @@ func serve(cmd *cobra.Command, args []string) {
 	// redis
 	var redisClient = connection.RedisClient()
 
-	//generics
+	// generics
 	models.InitGenericModel(dbClient)
 	repoImpl.InitGenericRepository(dbClient)
 

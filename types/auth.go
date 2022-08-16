@@ -1,8 +1,10 @@
 package types
 
 import (
+	"errors"
+
 	"auth/consts"
-	"auth/errors"
+	"auth/rest_errors"
 	"auth/utils/methods"
 
 	v "github.com/go-ozzo/ozzo-validation/v4"
@@ -117,7 +119,7 @@ func (s SocialLoginReq) loginProviderValid(value interface{}) error {
 	loginProviders := consts.LoginProviders()
 
 	if _, ok := loginProviders[s.LoginProvider]; !ok {
-		return errors.ErrInvalidLoginProvider
+		return errors.New(rest_errors.ErrInvalidLoginProvider)
 	}
 
 	return nil

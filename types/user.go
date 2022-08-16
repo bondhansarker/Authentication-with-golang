@@ -1,10 +1,12 @@
 package types
 
 import (
-	"auth/errors"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"errors"
 	"regexp"
 	"strings"
+
+	"auth/rest_errors"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 
 	"auth/connection"
 	"auth/consts"
@@ -107,10 +109,10 @@ func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	if res.RowsAffected > 0 {
 		if user.ID != u.ID || u.ID == 0 {
 			if value == "email" && user.Email == u.Email {
-				return errors.ErrEmailAlreadyRegistered
+				return errors.New(rest_errors.ErrEmailAlreadyRegistered)
 			}
 			if value == "user_name" && userName != "" && user.UserName == userName {
-				return errors.ErrUserNameAlreadyRegistered
+				return errors.New(rest_errors.ErrUserNameAlreadyRegistered)
 			}
 		}
 	}
@@ -119,7 +121,7 @@ func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 
 func (u UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
 	if !u.isCreating() && !methods.IsEmpty(u.Email) {
-		return errors.ErrEmailUpdateNotAllowed
+		return errors.New(rest_errors.ErrEmailUpdateNotAllowed)
 	}
 
 	return nil
@@ -127,7 +129,7 @@ func (u UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
 
 func (u UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
 	if !u.isCreating() && !methods.IsEmpty(u.UserName) {
-		return errors.ErrUserNameUpdateNotAllowed
+		return errors.New(rest_errors.ErrUserNameUpdateNotAllowed)
 	}
 
 	return nil
@@ -135,7 +137,7 @@ func (u UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
 
 func (u UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
 	if !u.isCreating() && !methods.IsEmpty(u.Password) {
-		return errors.ErrPasswordUpdateNotAllowed
+		return errors.New(rest_errors.ErrPasswordUpdateNotAllowed)
 	}
 
 	return nil
@@ -157,7 +159,7 @@ func (u UserCreateUpdateReq) loginProviderValid(value interface{}) error {
 	loginProviders := consts.LoginProviders()
 
 	if _, ok := loginProviders[u.LoginProvider]; !ok {
-		return errors.ErrInvalidLoginProvider
+		return errors.New(rest_errors.ErrInvalidLoginProvider)
 	}
 
 	return nil

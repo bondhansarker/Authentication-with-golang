@@ -1,12 +1,13 @@
 package serviceImpl
 
 import (
-	"auth/errors"
-	"auth/services"
+	"errors"
 	"time"
 
+	"auth/rest_errors"
+	"auth/services"
+
 	"auth/config"
-	"auth/consts"
 	"auth/types"
 	"auth/utils/log"
 	"github.com/dgrijalva/jwt-go"
@@ -45,7 +46,7 @@ func (jts *jwtService) CreateToken(userId int) (*types.JwtToken, error) {
 	token.AccessToken, err = at.SignedString([]byte(jwtConf.AccessTokenSecret))
 	if err != nil {
 		log.Error(err)
-		return nil, errors.SignToken(consts.AccessToken)
+		return nil, errors.New(rest_errors.ErrSigningAccessToken)
 	}
 
 	rtClaims := jwt.MapClaims{}
@@ -58,7 +59,7 @@ func (jts *jwtService) CreateToken(userId int) (*types.JwtToken, error) {
 	token.RefreshToken, err = rt.SignedString([]byte(jwtConf.RefreshTokenSecret))
 	if err != nil {
 		log.Error(err)
-		return nil, errors.SignToken(consts.RefreshToken)
+		return nil, errors.New(rest_errors.ErrSigningRefreshToken)
 	}
 
 	return token, nil

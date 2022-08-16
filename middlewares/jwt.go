@@ -1,12 +1,13 @@
 package middlewares
 
 import (
-	"auth/services"
 	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"auth/services"
 
 	conf "auth/config"
 	"auth/types"
@@ -46,7 +47,7 @@ type (
 		SuccessHandler JWTSuccessHandler
 
 		// ErrorHandler defines a function which is executed for an invalid token.
-		// It may be used to define a custom JWT error.
+		// It may be used to define a custom JWT rest_errors.
 		ErrorHandler JWTErrorHandler
 
 		// ErrorHandlerWithContext is almost identical to ErrorHandler, but it's passed the current context.
@@ -131,8 +132,8 @@ func DefaultSkipper(echo.Context) bool {
 // JWT returns a JSON Web Token (JWT) auth middleware.
 //
 // For valid token, it sets the user in context and calls next handler.
-// For invalid token, it returns "401 - Unauthorized" error.
-// For missing token, it returns "400 - Bad Request" error.
+// For invalid token, it returns "401 - Unauthorized" rest_errors.
+// For missing token, it returns "400 - Bad Request" rest_errors.
 //
 // See: https://jwt.io/introduction
 // See `JWTConfig.TokenLookup`
@@ -242,7 +243,7 @@ func (jmr *JWTMiddleware) JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
 			// Check if access_uuid corresponds to user_id in Redis
 			redisUserId, err := jmr.cacheService.GetInt(redisConfig.AccessUuidPrefix + tokenDetails.AccessUuid)
 			if err != nil || redisUserId != tokenDetails.UserID {
-				log.Error("error: ", err, " | redis user: ", redisUserId, " | token user: ", tokenDetails.UserID)
+				log.Error("rest_errors: ", err, " | redis user: ", redisUserId, " | token user: ", tokenDetails.UserID)
 				return ErrJWTMissing
 			}
 

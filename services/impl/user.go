@@ -1,11 +1,13 @@
 package serviceImpl
 
 import (
-	"auth/errors"
-	"auth/repositories"
-	"auth/services"
+	"errors"
 	"strconv"
 	"time"
+
+	"auth/repositories"
+	"auth/rest_errors"
+	"auth/services"
 
 	"auth/config"
 	"auth/consts"
@@ -63,13 +65,16 @@ func (us *userService) UpdateUser(userUpdateReq *types.UserCreateUpdateReq) (*ty
 }
 
 func (us *userService) UpdateUserProfilePic(userProfilePic *types.ProfilePicUpdateReq) (*types.UserResp, error) {
-
 	user, err := us.userRepository.New(userProfilePic)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	return us.update(user)
+	userResp, err := us.update(user)
+	if err != nil {
+		return nil, errors.New(rest_errors.ErrUpdatingUserProfilePic)
+	}
+	return userResp, nil
 }
 
 func (us *userService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types.UserResp, error) {
@@ -93,7 +98,11 @@ func (us *userService) UpdateUserStat(userStat *types.UserStatUpdateReq) (*types
 		}
 	}
 
-	return us.update(user)
+	userResp, err := us.update(user)
+	if err != nil {
+		return nil, errors.New(rest_errors.ErrUpdatingUserStat)
+	}
+	return userResp, nil
 }
 
 func (us *userService) UpdateLastLogin(userId int) error {
@@ -103,7 +112,7 @@ func (us *userService) UpdateLastLogin(userId int) error {
 	}
 	if err := us.userRepository.UpdateByInterface(userId, data); err != nil {
 		log.Error(err)
-		return errors.Update(consts.MetaData)
+		return errors.New(rest_errors.ErrUpdatingUserMetaData)
 	}
 	return nil
 }
@@ -125,7 +134,7 @@ func (us *userService) UpdateUserCache(userId int) (*types.UserResp, error) {
 	redisConf := config.Redis()
 	if err := us.cacheService.SetStruct(redisConf.UserPrefix+strconv.Itoa(userResp.ID), userResp, redisConf.UserTtl); err != nil {
 		log.Error(err)
-		return nil, errors.UpdateCache(consts.User)
+		return nil, errors.New(rest_errors.ErrUpdatingCacheUser)
 	}
 
 	return userResp, nil
@@ -205,7 +214,7 @@ func (us *userService) ChangePassword(userId int, req *types.ChangePasswordReq) 
 	currentPass := []byte(*user.Password)
 	if err = bcrypt.CompareHashAndPassword(currentPass, []byte(req.OldPassword)); err != nil {
 		log.Error(err)
-		return errors.Invalid(consts.Password)
+		return errors.New(rest_errors.InvalidPassword)
 	}
 
 	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(req.NewPassword), 8)
@@ -215,7 +224,7 @@ func (us *userService) ChangePassword(userId int, req *types.ChangePasswordReq) 
 
 	if err := us.userRepository.UpdateByInterface(userId, data); err != nil {
 		log.Error(err)
-		return errors.Update(consts.Password)
+		return errors.New(rest_errors.ErrUpdatingUserPassword)
 	}
 	return nil
 }
@@ -243,13 +252,13 @@ func (us *userService) ForgotPassword(email string) (*types.ForgotPasswordResp, 
 
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, errors.New(rest_errors.ErrCreatingForgotPasswordOTP)
 	}
 
 	otpResp, err := us.CreateForgotPasswordOtp(user.ID, email)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, errors.New(rest_errors.ErrCreatingForgotPasswordOTP)
 	}
 
 	resp := types.ForgotPasswordResp{
@@ -273,21 +282,21 @@ func (us *userService) VerifyResetPassword(req *types.VerifyResetPasswordReq) er
 	parsedToken, err := methods.ParseJwtToken(req.Token, secret)
 	if err != nil {
 		log.Error(err)
-		return errors.ParseToken(consts.JWTToken)
+		return errors.New(rest_errors.ErrParsingJWTToken)
 	}
 
 	if _, ok := parsedToken.Claims.(jwt.Claims); !ok && !parsedToken.Valid {
-		return errors.Invalid(consts.ResetToken)
+		return errors.New(rest_errors.InvalidResetToken)
 	}
 
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return errors.Invalid(consts.ResetToken)
+		return errors.New(rest_errors.InvalidResetToken)
 	}
 
 	parsedEmail := claims["email"].(string)
 	if user.Email != parsedEmail {
-		return errors.Invalid(consts.ResetToken)
+		return errors.New(rest_errors.InvalidResetToken)
 	}
 
 	if !methods.IsEmpty(req.Otp) && !methods.IsEmpty(req.Nonce) {
@@ -296,7 +305,7 @@ func (us *userService) VerifyResetPassword(req *types.VerifyResetPasswordReq) er
 			Otp:   req.Otp,
 		}
 		if ok, err := us.VerifyForgotPasswordOtp(otpReq); err != nil && !ok {
-			return errors.Invalid(consts.OTP)
+			return errors.New(rest_errors.InvalidOTP)
 		}
 	}
 
@@ -310,7 +319,7 @@ func (us *userService) ResetPassword(req *types.ResetPasswordReq) error {
 	}
 	if err := us.userRepository.UpdateByInterface(req.ID, data); err != nil {
 		log.Error(err)
-		return errors.ResetPassword()
+		return errors.New(rest_errors.ErrResettingUserPassword)
 	}
 
 	return nil
@@ -323,7 +332,7 @@ func (us *userService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPassw
 	userId, err := us.cacheService.GetInt(nonceKey)
 	if err != nil {
 		log.Error(err)
-		return nil, errors.Invalid(consts.OTPNonce)
+		return nil, errors.New(rest_errors.InvalidOTPNonce)
 	}
 
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
@@ -341,7 +350,7 @@ func (us *userService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPassw
 	resp, err := us.CreateForgotPasswordOtp(userId, userDetail.Email)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, errors.New(rest_errors.ErrResendingForgotPasswordOTP)
 	}
 
 	return resp, nil
@@ -381,14 +390,14 @@ func (us *userService) VerifyForgotPasswordOtp(data *types.ForgotPasswordOtpReq)
 	userId, err := us.cacheService.GetInt(nonceKey)
 	if err != nil {
 		log.Error(err)
-		return false, errors.Invalid(consts.OTPNonce)
+		return false, errors.New(rest_errors.InvalidOTPNonce)
 	}
 
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
 	otp, err := us.cacheService.Get(otpKey)
 	if err != nil || otp != data.Otp {
 		log.Error(err)
-		return false, errors.Invalid(consts.OTPNonce)
+		return false, errors.New(rest_errors.InvalidOTPNonce)
 	}
 
 	if err = us.cacheService.Del(nonceKey, otpKey); err != nil {

@@ -1,13 +1,14 @@
 package controllers
 
 import (
-	"auth/errors"
-	"auth/services"
-	"auth/utils/messages"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"auth/consts"
+	"auth/rest_errors"
+	"auth/services"
+	"auth/utils/response"
 
 	"auth/utils/log"
 	"auth/utils/paginations"
@@ -32,19 +33,19 @@ func (ac *AdminController) FindUser(c echo.Context) error {
 	id, err := methods.ParseParam(c, "id")
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(err))
 	}
 
 	userId, err := strconv.Atoi(id)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
+		return c.JSON(response.BuildResponseBy(errors.New(rest_errors.ErrParsingRequestBody)))
 	}
 
 	resp, err := ac.userService.GetUserFromCache(userId, true)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(err))
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -56,12 +57,12 @@ func (ac *AdminController) FindUsers(c echo.Context) error {
 	err := ac.userService.GetUsers(pagination)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(err))
 	}
 	resp := types.PaginationResp{}
 	if err = methods.CopyStruct(pagination, &resp); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(err))
 	}
 	return c.JSON(http.StatusOK, resp)
 }
@@ -71,32 +72,32 @@ func (ac *AdminController) UpdateUser(c echo.Context) error {
 	var req types.UserCreateUpdateReq
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
+		return c.JSON(response.BuildResponseBy(errors.New(rest_errors.ErrParsingRequestBody)))
 	}
 
 	id, err := methods.ParseParam(c, "id")
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(err))
 	}
 
 	userId, err := strconv.Atoi(id)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
+		return c.JSON(response.BuildResponseBy(errors.New(rest_errors.ErrParsingRequestBody)))
 	}
 
 	req.ID = userId
 
 	if err = req.Validate(); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildValidationResponseBy(err, consts.User))
+		return c.JSON(response.BuildValidationResponseBy(err, consts.User))
 	}
 
 	userResp, err := ac.userService.UpdateUser(&req)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(err))
 	}
 
 	return c.JSON(http.StatusOK, userResp)
@@ -107,26 +108,27 @@ func (ac *AdminController) DeleteUser(c echo.Context) error {
 	var req types.UserDeleteReq
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
+		return c.JSON(response.BuildResponseBy(errors.New(rest_errors.ErrParsingRequestBody)))
+
 	}
 
 	id, err := methods.ParseParam(c, "id")
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(err))
 	}
 
 	userId, err := strconv.Atoi(id)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(errors.ParseRequest()))
+		return c.JSON(response.BuildResponseBy(errors.New(rest_errors.ErrParsingRequestBody)))
 	}
 
 	req.ID = userId
 
 	if err := ac.userService.DeleteUser(&req); err != nil {
 		log.Error(err)
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(err))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -137,11 +139,10 @@ func (ac *AdminController) DeleteUser(c echo.Context) error {
 func checkAdminAuthorization(c echo.Context) error {
 	user, err := GetUserFromContext(&c)
 	if err != nil {
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(err))
 	}
 	if user.IsAdmin == nil || *user.IsAdmin == false {
-		err = errors.AccessForbidden()
-		return c.JSON(messages.BuildResponseBy(err))
+		return c.JSON(response.BuildResponseBy(errors.New(rest_errors.AccessForbidden)))
 	}
 	return nil
 }

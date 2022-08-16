@@ -8,7 +8,7 @@ import (
 func Init(e *echo.Echo) {
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "status=${status}, method=${method}, uri=${uri}, error='${error}'\n",
+		Format: "status=${status}, method=${method}, uri=${uri}, rest_errors='${rest_errors}'\n",
 	}))
 	e.Use(middleware.CORS())
 	e.Use(middleware.Secure())

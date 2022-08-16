@@ -18,6 +18,7 @@ const (
 	Users = "users"
 
 	// Reserved keywords
+	Token                 = "token"
 	ResetToken            = "reset token"
 	RefreshToken          = "refresh token"
 	AccessToken           = "access token"
@@ -27,6 +28,8 @@ const (
 	OTP                   = "OTP"
 	OTPNonce              = "OTP nonce"
 	Password              = "password"
+	ProfilePic            = "profile picture"
+	Stat                  = "user statistics"
 	MetaData              = "metadata"
 	UserForgotPasswordOtp = "forgot_"
 
