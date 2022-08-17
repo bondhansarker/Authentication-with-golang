@@ -1,7 +1,6 @@
 package models
 
 import (
-	"auth/consts"
 	"time"
 )
 
@@ -28,36 +27,36 @@ type User struct {
 	LastLoginAt         *time.Time `json:"last_login_at"`
 }
 
-func (user *User) GetType() interface{} {
-	return User{}
-}
-
-func (user *User) Update() error {
-	genericModel := &GenericModel[*User]{
-		id:        user.ID,
-		modelName: consts.User,
-		dataType:  user.GetType(),
-		data:      user,
-	}
-	return genericModel.Update()
-}
-
-func (user *User) Create() error {
-	genericModel := &GenericModel[*User]{
-		id:        user.ID,
-		modelName: consts.User,
-		dataType:  user.GetType(),
-		data:      user,
-	}
-	return genericModel.Create()
-}
-
-func (user *User) Delete() error {
-	genericModel := &GenericModel[*User]{
-		id:        user.ID,
-		modelName: consts.User,
-		dataType:  user.GetType(),
-		data:      user,
-	}
-	return genericModel.Delete()
-}
+// func (user *User) GetType() interface{} {
+// 	return User{}
+// }
+//
+// func (user *User) Update() error {
+// 	genericModel := &GenericModel[*User]{
+// 		id:        user.ID,
+// 		modelName: consts.User,
+// 		dataType:  user.GetType(),
+// 		data:      user,
+// 	}
+// 	return genericModel.Update()
+// }
+//
+// func (user *User) Create() error {
+// 	genericModel := &GenericModel[*User]{
+// 		id:        user.ID,
+// 		modelName: consts.User,
+// 		dataType:  user.GetType(),
+// 		data:      user,
+// 	}
+// 	return genericModel.Create()
+// }
+//
+// func (user *User) Delete() error {
+// 	genericModel := &GenericModel[*User]{
+// 		id:        user.ID,
+// 		modelName: consts.User,
+// 		dataType:  user.GetType(),
+// 		data:      user,
+// 	}
+// 	return genericModel.Delete()
+// }

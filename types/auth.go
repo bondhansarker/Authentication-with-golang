@@ -1,8 +1,6 @@
 package types
 
 import (
-	"errors"
-
 	"auth/consts"
 	"auth/rest_errors"
 	"auth/utils/methods"
@@ -119,7 +117,7 @@ func (s SocialLoginReq) loginProviderValid(value interface{}) error {
 	loginProviders := consts.LoginProviders()
 
 	if _, ok := loginProviders[s.LoginProvider]; !ok {
-		return errors.New(rest_errors.ErrInvalidLoginProvider)
+		return rest_errors.ErrInvalidLoginProvider
 	}
 
 	return nil

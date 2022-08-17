@@ -39,7 +39,7 @@ func (ols *oAuthService) CreateUserWithProvider(email, provider string) (int, er
 	dbUser, err := ols.userService.GetUserByEmail(email)
 	user := &types.UserResp{}
 
-	if err != nil && methods.IsSameError(errors.New(rest_errors.UserNotFound), err) {
+	if err != nil && methods.IsSameError(rest_errors.UserNotFound, err) {
 		req := &types.UserCreateUpdateReq{
 			Email:         email,
 			LoginProvider: provider,
@@ -47,13 +47,13 @@ func (ols *oAuthService) CreateUserWithProvider(email, provider string) (int, er
 		user, err = ols.userService.CreateUser(req)
 		if err != nil {
 			log.Error(err)
-			return consts.DefaultInt, errors.New(rest_errors.ErrLogin)
+			return consts.DefaultInt, rest_errors.ErrLogin
 		}
 	}
 
 	if err := methods.CopyStruct(dbUser, &user); err != nil {
 		log.Error(err)
-		return consts.DefaultInt, errors.New(rest_errors.ErrLogin)
+		return consts.DefaultInt, rest_errors.ErrLogin
 	}
 
 	if user.LoginProvider != provider {
@@ -64,7 +64,7 @@ func (ols *oAuthService) CreateUserWithProvider(email, provider string) (int, er
 
 func (ols *oAuthService) ProcessGoogleLogin(token string) (int, error) {
 	if !ols.IsValidGoogleIdToken(token) {
-		return consts.DefaultInt, errors.New(rest_errors.InvalidSocialLoginToken)
+		return consts.DefaultInt, rest_errors.InvalidSocialLoginToken
 	}
 	googleUser, err := ols.FetchGoogleUserInfo(token)
 	if err != nil {
@@ -85,7 +85,7 @@ func (ols *oAuthService) ProcessFacebookLogin(token string) (int, error) {
 
 func (ols *oAuthService) ProcessAppleLogin(token string) (int, error) {
 	if !ols.IsValidAppleIdToken(token) {
-		return consts.DefaultInt, errors.New(rest_errors.InvalidSocialLoginToken)
+		return consts.DefaultInt, rest_errors.InvalidSocialLoginToken
 	}
 	appleUser, err := ols.FetchAppleUserInfo(token)
 	if err != nil {
@@ -99,12 +99,12 @@ func (ols *oAuthService) FetchGoogleUserInfo(idToken string) (*types.GoogleToken
 	token, _, err := new(jwt.Parser).ParseUnverified(idToken, &types.GoogleTokenInfo{})
 	if err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.InvalidSocialLoginToken)
+		return nil, rest_errors.InvalidSocialLoginToken
 	}
 	if tokenInfo, ok := token.Claims.(*types.GoogleTokenInfo); ok {
 		return tokenInfo, nil
 	}
-	return nil, errors.New(rest_errors.InvalidSocialLoginToken)
+	return nil, rest_errors.InvalidSocialLoginToken
 }
 
 func (ols *oAuthService) FetchFbUserInfo(token string) (*types.FbTokenInfo, error) {
@@ -113,7 +113,7 @@ func (ols *oAuthService) FetchFbUserInfo(token string) (*types.FbTokenInfo, erro
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.InvalidSocialLoginToken)
+		return nil, rest_errors.InvalidSocialLoginToken
 	}
 
 	defer func() {
@@ -121,12 +121,12 @@ func (ols *oAuthService) FetchFbUserInfo(token string) (*types.FbTokenInfo, erro
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(rest_errors.InvalidSocialLoginToken)
+		return nil, rest_errors.InvalidSocialLoginToken
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(tokenInfo); err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.InvalidSocialLoginToken)
+		return nil, rest_errors.InvalidSocialLoginToken
 	}
 
 	return tokenInfo, nil
@@ -136,12 +136,12 @@ func (ols *oAuthService) FetchAppleUserInfo(token string) (*types.AppleTokenInfo
 	parsedToken, _, err := new(jwt.Parser).ParseUnverified(token, &types.AppleTokenInfo{})
 	if err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.InvalidSocialLoginToken)
+		return nil, rest_errors.InvalidSocialLoginToken
 	}
 	if tokenInfo, ok := parsedToken.Claims.(*types.AppleTokenInfo); ok {
 		return tokenInfo, nil
 	}
-	return nil, errors.New(rest_errors.InvalidSocialLoginToken)
+	return nil, rest_errors.InvalidSocialLoginToken
 }
 
 func (ols *oAuthService) IsValidAppleIdToken(idToken string) bool {

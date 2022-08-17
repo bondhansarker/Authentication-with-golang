@@ -2,7 +2,6 @@ package methods
 
 import (
 	"encoding/json"
-	"errors"
 	"math/rand"
 	"reflect"
 	"regexp"
@@ -29,12 +28,12 @@ func CopyStruct(input interface{}, output interface{}) error {
 	if b, err := json.Marshal(input); err == nil {
 		if err := json.Unmarshal(b, &output); err != nil {
 			log.Info(err.Error())
-			return errors.New(rest_errors.ErrCopyStruct)
+			return rest_errors.ErrCopyStruct
 		}
 		return nil
 	} else {
 		log.Info(err.Error())
-		return errors.New(rest_errors.ErrCopyStruct)
+		return rest_errors.ErrCopyStruct
 	}
 }
 
@@ -56,7 +55,7 @@ func InArray(needle interface{}, haystack interface{}) bool {
 func ParseParam(c echo.Context, paramName string) (string, error) {
 	param := c.Param(paramName)
 	if param == "" {
-		return "", errors.New(rest_errors.ErrMissingParams)
+		return "", rest_errors.ErrMissingParams
 	}
 	return param, nil
 }
@@ -72,13 +71,13 @@ func AccessTokenFromHeader(c echo.Context) (string, error) {
 		return auth[l+1:], nil
 	}
 
-	return "", errors.New(rest_errors.InvalidAccessToken)
+	return "", rest_errors.InvalidAccessToken
 }
 
 func ParseJwtToken(token, secret string) (*jwt.Token, error) {
 	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New(rest_errors.InvalidSigningMethod)
+			return nil, rest_errors.InvalidSigningMethod
 		}
 		return []byte(secret), nil
 	})
@@ -146,7 +145,7 @@ func IsEmpty(x interface{}) bool {
 
 func ValidatePassword(pass string) error {
 	if len(pass) < 8 {
-		return errors.New(rest_errors.InvalidPasswordFormat)
+		return rest_errors.InvalidPasswordFormat
 	}
 
 	num := `[0-9]{1}`
@@ -155,19 +154,19 @@ func ValidatePassword(pass string) error {
 	symbol := `[.!@#~$%^&*()+|_<>]{1}`
 
 	if b, err := regexp.MatchString(num, pass); !b || err != nil {
-		return errors.New(rest_errors.InvalidPasswordFormat)
+		return rest_errors.InvalidPasswordFormat
 	}
 
 	if b, err := regexp.MatchString(a_z, pass); !b || err != nil {
-		return errors.New(rest_errors.InvalidPasswordFormat)
+		return rest_errors.InvalidPasswordFormat
 	}
 
 	if b, err := regexp.MatchString(A_Z, pass); !b || err != nil {
-		return errors.New(rest_errors.InvalidPasswordFormat)
+		return rest_errors.InvalidPasswordFormat
 	}
 
 	if b, err := regexp.MatchString(symbol, pass); !b || err != nil {
-		return errors.New(rest_errors.InvalidPasswordFormat)
+		return rest_errors.InvalidPasswordFormat
 	}
 
 	return nil

@@ -1,7 +1,6 @@
 package serviceImpl
 
 import (
-	"errors"
 	"time"
 
 	"auth/rest_errors"
@@ -46,7 +45,7 @@ func (jts *jwtService) CreateToken(userId int) (*types.JwtToken, error) {
 	token.AccessToken, err = at.SignedString([]byte(jwtConf.AccessTokenSecret))
 	if err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.ErrSigningAccessToken)
+		return nil, rest_errors.ErrSigningAccessToken
 	}
 
 	rtClaims := jwt.MapClaims{}
@@ -59,7 +58,7 @@ func (jts *jwtService) CreateToken(userId int) (*types.JwtToken, error) {
 	token.RefreshToken, err = rt.SignedString([]byte(jwtConf.RefreshTokenSecret))
 	if err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.ErrSigningRefreshToken)
+		return nil, rest_errors.ErrSigningRefreshToken
 	}
 
 	return token, nil

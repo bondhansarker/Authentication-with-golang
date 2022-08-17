@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"net/http"
 
 	"auth/consts"
@@ -51,7 +50,7 @@ func (uc *UserController) UpdateUser(c echo.Context) error {
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = user.ID
@@ -79,7 +78,7 @@ func (uc *UserController) UpdateProfilePic(c echo.Context) error {
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = user.ID
@@ -104,7 +103,7 @@ func (uc *UserController) UpdateUserStat(c echo.Context) error {
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = user.ID
@@ -129,7 +128,7 @@ func (uc *UserController) ChangePassword(c echo.Context) error {
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err = req.Validate(); err != nil {
@@ -138,7 +137,7 @@ func (uc *UserController) ChangePassword(c echo.Context) error {
 	}
 
 	if req.OldPassword == req.NewPassword {
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrSamePassword)))
+		return c.JSON(response.BuildBody(rest_errors.ErrSamePassword))
 	}
 
 	if err := uc.userService.ChangePassword(loggedInUser.ID, &req); err != nil {
@@ -154,7 +153,7 @@ func (uc *UserController) ForgotPassword(c echo.Context) error {
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err := req.Validate(); err != nil {
@@ -176,7 +175,7 @@ func (uc *UserController) VerifyResetPassword(c echo.Context) error {
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err := req.Validate(); err != nil {
@@ -197,7 +196,7 @@ func (uc *UserController) ResendForgotPasswordOtp(c echo.Context) error {
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err := req.Validate(); err != nil {
@@ -219,7 +218,7 @@ func (uc *UserController) ResetPassword(c echo.Context) error {
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err := req.Validate(); err != nil {

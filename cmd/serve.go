@@ -5,7 +5,6 @@ import (
 
 	"auth/models"
 	repoImpl "auth/repositories/impl"
-	"auth/rest_errors"
 	serviceImpl "auth/services/impl"
 
 	"auth/config"
@@ -34,7 +33,6 @@ func serve(cmd *cobra.Command, args []string) {
 
 	// config
 	config.Load()
-	rest_errors.InitErrorMap()
 
 	// connection
 	connection.Redis()

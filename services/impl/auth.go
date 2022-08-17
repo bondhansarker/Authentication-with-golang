@@ -41,7 +41,7 @@ func (as *authService) Login(req *types.LoginReq) (*types.LoginResp, error) {
 	user, err := as.userService.GetUserByEmail(req.Email)
 	if err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.ErrLogin)
+		return nil, rest_errors.ErrLogin
 	}
 
 	// NOTE: Only Users registered via general provider are allowed here
@@ -53,8 +53,8 @@ func (as *authService) Login(req *types.LoginReq) (*types.LoginResp, error) {
 	hashedPass := []byte(*user.Password)
 
 	if err = bcrypt.CompareHashAndPassword(hashedPass, loginPass); err != nil {
-		log.Error(errors.New(rest_errors.InvalidPassword))
-		return nil, errors.New(rest_errors.ErrLogin)
+		log.Error(rest_errors.InvalidPassword)
+		return nil, rest_errors.ErrLogin
 	}
 	return as.generateLoginResponse(user.ID)
 }
@@ -70,7 +70,7 @@ func (as *authService) SocialLogin(req *types.SocialLoginReq) (*types.LoginResp,
 	case consts.LoginProviderApple:
 		userId, err = as.oAuthService.ProcessAppleLogin(req.Token)
 	default:
-		return nil, errors.New(rest_errors.ErrInvalidLoginProvider)
+		return nil, rest_errors.ErrInvalidLoginProvider
 	}
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (as *authService) SocialLogin(req *types.SocialLoginReq) (*types.LoginResp,
 func (as *authService) Logout(user *types.LoggedInUser) error {
 	if err := as.tokenService.DeleteTokenUuid(config.Redis().AccessUuidPrefix+user.AccessUuid,
 		config.Redis().RefreshUuidPrefix+user.RefreshUuid); err != nil {
-		return errors.New(rest_errors.ErrLogOut)
+		return rest_errors.ErrLogOut
 	}
 	return nil
 }
@@ -116,11 +116,11 @@ func (as *authService) CheckUserInCache(userId int, uuid, uuidType string) bool 
 func (as *authService) RefreshToken(refreshToken string) (*types.LoginResp, error) {
 	oldToken, err := as.ParseToken(refreshToken, consts.RefreshTokenType)
 	if err != nil {
-		return nil, errors.New(rest_errors.InvalidRefreshToken)
+		return nil, rest_errors.InvalidRefreshToken
 	}
 
 	if !as.CheckUserInCache(oldToken.UserID, oldToken.RefreshUuid, consts.RefreshTokenType) {
-		return nil, errors.New(rest_errors.InvalidRefreshToken)
+		return nil, rest_errors.InvalidRefreshToken
 	}
 
 	var user *types.UserResp
@@ -140,7 +140,7 @@ func (as *authService) RefreshToken(refreshToken string) (*types.LoginResp, erro
 		config.Redis().RefreshUuidPrefix+oldToken.RefreshUuid,
 	); err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.ErrDeletingOldJWTToken)
+		return nil, rest_errors.ErrDeletingOldJWTToken
 	}
 
 	res := &types.LoginResp{
@@ -157,11 +157,11 @@ func (as *authService) RefreshToken(refreshToken string) (*types.LoginResp, erro
 func (as *authService) VerifyToken(accessToken string) (*types.UserResp, error) {
 	token, err := as.ParseToken(accessToken, consts.AccessTokenType)
 	if err != nil {
-		return nil, errors.New(rest_errors.InvalidAccessToken)
+		return nil, rest_errors.InvalidAccessToken
 	}
 
 	if !as.CheckUserInCache(token.UserID, token.AccessUuid, consts.AccessTokenType) {
-		return nil, errors.New(rest_errors.InvalidAccessToken)
+		return nil, rest_errors.InvalidAccessToken
 	}
 
 	userResp, err := as.userService.GetUserFromCache(token.UserID, false)
@@ -179,12 +179,12 @@ func (as *authService) CreateToken(userId int) (*types.JwtToken, error) {
 
 	if token, err = as.tokenService.CreateToken(userId); err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.ErrCreatingJWTToken)
+		return nil, rest_errors.ErrCreatingJWTToken
 	}
 
 	if err = as.tokenService.StoreTokenUuid(userId, token); err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.ErrStoringJWTToken)
+		return nil, rest_errors.ErrStoringJWTToken
 	}
 
 	return token, nil
@@ -206,7 +206,7 @@ func (as *authService) ParseToken(token, tokenType string) (*types.JwtToken, err
 
 	if tokenDetails.UserID == 0 || tokenDetails.AccessUuid == "" || tokenDetails.RefreshUuid == "" {
 		log.Error(claims)
-		return nil, errors.New(rest_errors.InvalidJWTToken)
+		return nil, rest_errors.InvalidJWTToken
 	}
 
 	return tokenDetails, nil
@@ -222,16 +222,16 @@ func (as *authService) ParseTokenClaim(token, tokenType string) (jwt.MapClaims, 
 	parsedToken, err := methods.ParseJwtToken(token, secret)
 	if err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.ErrParsingJWTToken)
+		return nil, rest_errors.ErrParsingJWTToken
 	}
 
 	if _, ok := parsedToken.Claims.(jwt.Claims); !ok || !parsedToken.Valid {
-		return nil, errors.New(rest_errors.InvalidJWTToken)
+		return nil, rest_errors.InvalidJWTToken
 	}
 
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, errors.New(rest_errors.InvalidJWTToken)
+		return nil, rest_errors.InvalidJWTToken
 	}
 
 	return claims, nil
@@ -243,7 +243,7 @@ func (as *authService) generateLoginResponse(userId int) (*types.LoginResp, erro
 	userResp, err := as.userService.GetUserFromCache(userId, true)
 	if err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.ErrLogin)
+		return nil, rest_errors.ErrLogin
 	}
 
 	token, err := as.CreateToken(userId)

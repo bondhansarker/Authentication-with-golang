@@ -14,10 +14,6 @@ func Store(entity string) string {
 	return fmt.Sprintf("failed to store %v", entity)
 }
 
-func Reset(entity string) string {
-	return fmt.Sprintf("failed to reset %v", entity)
-}
-
 func Fetch(entity string) string {
 	return fmt.Sprintf("failed to fetch the %v", entity)
 }

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -34,7 +33,7 @@ func (ac *AuthController) Signup(c echo.Context) error {
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = 0 // remove `id`(if provided somehow) while creation
@@ -58,7 +57,7 @@ func (ac *AuthController) Login(c echo.Context) error {
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err := req.Validate(); err != nil {
@@ -79,7 +78,7 @@ func (ac *AuthController) SocialLogin(c echo.Context) error {
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err := req.Validate(); err != nil {

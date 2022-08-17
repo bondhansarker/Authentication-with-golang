@@ -1,75 +1,85 @@
 package rest_errors
 
 import (
+	"errors"
 	"net/http"
 
 	"auth/consts"
 )
 
+func NewError(message string, httpCode int) error {
+	_, available := ResponseCode[message]
+	if !available {
+		ResponseCode[message] = httpCode
+	}
+	return errors.New(message)
+}
+
 var (
-	// validation rest_errors
-	ErrEmailUpdateNotAllowed     = "email update not allowed"
-	ErrUserNameUpdateNotAllowed  = "username update not allowed"
-	ErrPasswordUpdateNotAllowed  = "password update not allowed"
-	ErrInvalidLoginProvider      = "invalid login provider"
-	ErrEmailAlreadyRegistered    = "email is already taken"
-	ErrUserNameAlreadyRegistered = "username is already taken"
+
+	// validation rest_response.BuildBody
+	ErrEmailUpdateNotAllowed     = NewError("email update not allowed", http.StatusBadRequest)
+	ErrUserNameUpdateNotAllowed  = NewError("username update not allowed", http.StatusBadRequest)
+	ErrPasswordUpdateNotAllowed  = NewError("password update not allowed", http.StatusBadRequest)
+	ErrInvalidLoginProvider      = NewError("invalid login provider", http.StatusBadRequest)
+	ErrEmailAlreadyRegistered    = NewError("email is already taken", http.StatusBadRequest)
+	ErrUserNameAlreadyRegistered = NewError("username is already taken", http.StatusBadRequest)
 
 	// Common
 
-	NoLoggedInUserFound   = "no logged-in user found"
-	AccessForbidden       = "access forbidden"
-	ErrCopyStruct         = "failed to copy the structs"
-	ErrParsingRequestBody = "failed to parse request body"
-	ErrMissingParams      = "params not found in the request"
+	NoLoggedInUserFound   = NewError("no logged-in user found", http.StatusUnauthorized)
+	AccessForbidden       = NewError("access forbidden", http.StatusForbidden)
+	ErrCopyStruct         = NewError("failed to copy the structs", http.StatusInternalServerError)
+	ErrParsingRequestBody = NewError("failed to parse request body", http.StatusBadRequest)
+	ErrMissingParams      = NewError("params not found in the request", http.StatusBadRequest)
 
 	// Auth
-	ErrSamePassword         = "password can't be same as old one"
-	ErrResetPassword        = "failed to reset password"
-	ErrLogOut               = "failed to logout"
-	ErrLogin                = "invalid email or password"
-	InvalidPassword         = Invalid(consts.Password)
-	InvalidAccessToken      = Invalid(consts.AccessToken)
-	InvalidRefreshToken     = Invalid(consts.RefreshToken)
-	InvalidResetToken       = Invalid(consts.ResetToken)
-	InvalidSocialLoginToken = Invalid(consts.SocialLoginToken)
-	InvalidOTP              = Invalid(consts.OTP)
-	InvalidOldToken         = Invalid(consts.OldToken)
-	InvalidOTPNonce         = Invalid(consts.OTPNonce)
-	InvalidJWTToken         = Invalid(consts.JWTToken)
+	ErrSamePassword         = NewError("password can't be same as old one", http.StatusBadRequest)
+	ErrResetPassword        = NewError("failed to reset password", http.StatusInternalServerError)
+	ErrLogOut               = NewError("failed to logout", http.StatusInternalServerError)
+	ErrLogin                = NewError("invalid email or password", http.StatusUnauthorized)
+	InvalidPassword         = NewError(Invalid(consts.Password), http.StatusUnauthorized)
+	InvalidAccessToken      = NewError(Invalid(consts.AccessToken), http.StatusUnauthorized)
+	InvalidRefreshToken     = NewError(Invalid(consts.RefreshToken), http.StatusUnauthorized)
+	InvalidResetToken       = NewError(Invalid(consts.ResetToken), http.StatusUnauthorized)
+	InvalidSocialLoginToken = NewError(Invalid(consts.SocialLoginToken), http.StatusUnauthorized)
+	InvalidOTP              = NewError(Invalid(consts.OTP), http.StatusUnauthorized)
+	InvalidOldToken         = NewError(Invalid(consts.OldToken), http.StatusUnauthorized)
+	InvalidOTPNonce         = NewError(Invalid(consts.OTPNonce), http.StatusUnauthorized)
+	InvalidJWTToken         = NewError(Invalid(consts.JWTToken), http.StatusUnauthorized)
 
-	InvalidSigningMethod        = "invalid signing method while parsing jwt"
-	InvalidPasswordFormat       = "minimum 8 characters with at least 1 uppercase letter(A-Z), 1 lowercase letter(a-z), 1 number(0-9) and 1 special character(.!@#~$%^&*()+|_<>)"
-	InvalidLoginAttemptHink     = InvalidLoginAttempt(consts.LoginProviderHink)
-	InvalidLoginAttemptGoogle   = InvalidLoginAttempt(consts.LoginProviderGoogle)
-	InvalidLoginAttemptFacebook = InvalidLoginAttempt(consts.LoginProviderFacebook)
-	InvalidLoginAttemptApple    = InvalidLoginAttempt(consts.LoginProviderApple)
+	InvalidSigningMethod        = NewError("invalid signing method while parsing jwt", http.StatusUnauthorized)
+	InvalidPasswordFormat       = NewError("minimum 8 characters with at least 1 uppercase letter(A-Z), 1 lowercase letter(a-z), 1 number(0-9) and 1 special character(.!@#~$%^&*()+|_<>)", http.StatusBadRequest)
+	InvalidLoginAttemptHink     = NewError(InvalidLoginAttempt(consts.LoginProviderHink), http.StatusUnauthorized)
+	InvalidLoginAttemptGoogle   = NewError(InvalidLoginAttempt(consts.LoginProviderGoogle), http.StatusUnauthorized)
+	InvalidLoginAttemptFacebook = NewError(InvalidLoginAttempt(consts.LoginProviderFacebook), http.StatusUnauthorized)
+	InvalidLoginAttemptApple    = NewError(InvalidLoginAttempt(consts.LoginProviderApple), http.StatusUnauthorized)
 
 	// Token
-	ErrParsingJWTToken     = ParseToken(consts.JWTToken)
-	ErrStoringJWTToken     = Store(consts.JWTToken)
-	ErrCreatingJWTToken    = Create(consts.JWTToken)
-	ErrDeletingOldJWTToken = Delete(consts.OldToken)
+	ErrParsingJWTToken     = NewError(ParseToken(consts.JWTToken), http.StatusInternalServerError)
+	ErrStoringJWTToken     = NewError(Store(consts.JWTToken), http.StatusInternalServerError)
+	ErrCreatingJWTToken    = NewError(Create(consts.JWTToken), http.StatusInternalServerError)
+	ErrDeletingOldJWTToken = NewError(Delete(consts.OldToken), http.StatusInternalServerError)
 
-	// Err Signing Errors
-	ErrSigningAccessToken  = SignToken(consts.AccessToken)
-	ErrSigningRefreshToken = SignToken(consts.RefreshToken)
+	// Err Signing response.BuildBody
+	ErrSigningAccessToken  = NewError(SignToken(consts.AccessToken), http.StatusInternalServerError)
+	ErrSigningRefreshToken = NewError(SignToken(consts.RefreshToken), http.StatusInternalServerError)
 
 	// User
-	ErrCreatingUser               = Create(consts.User)
-	ErrUpdatingUser               = Update(consts.User)
-	ErrUpdatingUserMetaData       = Update(consts.MetaData)
-	ErrUpdatingUserPassword       = Update(consts.Password)
-	ErrResettingUserPassword      = Update(consts.Password)
-	ErrUpdatingUserProfilePic     = Update(consts.ProfilePic)
-	ErrUpdatingUserStat           = Update(consts.Stat)
-	ErrDeletingUser               = Delete(consts.User)
-	ErrFetchingUsers              = Fetch(consts.Users)
-	ErrCountingUsers              = Count(consts.Users)
-	ErrUpdatingCacheUser          = UpdateCache(consts.User)
-	ErrResendingForgotPasswordOTP = "failed to resend the OTP"
-	ErrCreatingForgotPasswordOTP  = "failed to create the OTP"
-	UserNotFound                  = NotFound(consts.User)
+	ErrCreatingUser               = NewError(Create(consts.User), http.StatusInternalServerError)
+	ErrUpdatingUser               = NewError(Update(consts.User), http.StatusInternalServerError)
+	ErrUpdatingUserMetaData       = NewError(Update(consts.MetaData), http.StatusInternalServerError)
+	ErrUpdatingUserPassword       = NewError(Update(consts.Password), http.StatusInternalServerError)
+	ErrResettingUserPassword      = NewError(Update(consts.Password), http.StatusInternalServerError)
+	ErrUpdatingUserProfilePic     = NewError(Update(consts.ProfilePic), http.StatusInternalServerError)
+	ErrUpdatingUserStat           = NewError(Update(consts.Stat), http.StatusInternalServerError)
+	ErrDeletingUser               = NewError(Delete(consts.User), http.StatusInternalServerError)
+	ErrFetchingUsers              = NewError(Fetch(consts.Users), http.StatusInternalServerError)
+	ErrCountingUsers              = NewError(Count(consts.Users), http.StatusInternalServerError)
+	ErrUpdatingCacheUser          = NewError(UpdateCache(consts.User), http.StatusInternalServerError)
+	ErrResendingForgotPasswordOTP = NewError("failed to resend the OTP", http.StatusInternalServerError)
+	ErrCreatingForgotPasswordOTP  = NewError("failed to create the OTP", http.StatusInternalServerError)
+	UserNotFound                  = NewError(NotFound(consts.User), http.StatusNotFound)
 )
 
 // Http code
@@ -77,60 +87,4 @@ var ResponseCode = make(map[string]int)
 
 func ResponseMap() map[string]int {
 	return ResponseCode
-}
-
-func InitErrorMap() {
-
-	// Bad Request
-	ResponseCode[ErrSamePassword] = http.StatusBadRequest
-	ResponseCode[InvalidPasswordFormat] = http.StatusBadRequest
-	ResponseCode[ErrParsingRequestBody] = http.StatusBadRequest
-
-	// Internal Server Error
-	ResponseCode[ErrResetPassword] = http.StatusInternalServerError
-	ResponseCode[ErrLogOut] = http.StatusInternalServerError
-	ResponseCode[ErrLogin] = http.StatusInternalServerError
-	ResponseCode[ErrSigningAccessToken] = http.StatusInternalServerError
-	ResponseCode[ErrSigningRefreshToken] = http.StatusInternalServerError
-	ResponseCode[ErrCopyStruct] = http.StatusInternalServerError
-	ResponseCode[ErrStoringJWTToken] = http.StatusInternalServerError
-	ResponseCode[ErrCreatingJWTToken] = http.StatusInternalServerError
-	ResponseCode[ErrCreatingUser] = http.StatusInternalServerError
-	ResponseCode[ErrUpdatingUser] = http.StatusInternalServerError
-	ResponseCode[ErrUpdatingUserMetaData] = http.StatusInternalServerError
-	ResponseCode[ErrResettingUserPassword] = http.StatusInternalServerError
-	ResponseCode[ErrUpdatingUserPassword] = http.StatusInternalServerError
-	ResponseCode[ErrUpdatingUserProfilePic] = http.StatusInternalServerError
-	ResponseCode[ErrUpdatingUserStat] = http.StatusInternalServerError
-	ResponseCode[ErrFetchingUsers] = http.StatusInternalServerError
-	ResponseCode[ErrCountingUsers] = http.StatusInternalServerError
-	ResponseCode[ErrUpdatingCacheUser] = http.StatusInternalServerError
-	ResponseCode[ErrDeletingUser] = http.StatusInternalServerError
-	ResponseCode[ErrResendingForgotPasswordOTP] = http.StatusInternalServerError
-	ResponseCode[ErrCreatingForgotPasswordOTP] = http.StatusInternalServerError
-	ResponseCode[ErrDeletingOldJWTToken] = http.StatusInternalServerError
-
-	// Unauthorized
-	ResponseCode[InvalidSigningMethod] = http.StatusUnauthorized
-	ResponseCode[InvalidLoginAttemptHink] = http.StatusUnauthorized
-	ResponseCode[InvalidLoginAttemptGoogle] = http.StatusUnauthorized
-	ResponseCode[InvalidLoginAttemptFacebook] = http.StatusUnauthorized
-	ResponseCode[InvalidLoginAttemptApple] = http.StatusUnauthorized
-	ResponseCode[ErrParsingJWTToken] = http.StatusUnauthorized
-	ResponseCode[NoLoggedInUserFound] = http.StatusUnauthorized
-	ResponseCode[InvalidPassword] = http.StatusUnauthorized
-	ResponseCode[InvalidAccessToken] = http.StatusUnauthorized
-	ResponseCode[InvalidRefreshToken] = http.StatusUnauthorized
-	ResponseCode[InvalidResetToken] = http.StatusUnauthorized
-	ResponseCode[InvalidSocialLoginToken] = http.StatusUnauthorized
-	ResponseCode[InvalidOTP] = http.StatusUnauthorized
-	ResponseCode[InvalidOldToken] = http.StatusUnauthorized
-	ResponseCode[InvalidOTPNonce] = http.StatusUnauthorized
-
-	// Forbidden
-	ResponseCode[AccessForbidden] = http.StatusForbidden
-
-	// Status Not Found
-	ResponseCode[UserNotFound] = http.StatusNotFound
-
 }

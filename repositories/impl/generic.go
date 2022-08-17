@@ -1,7 +1,6 @@
 package impl
 
 import (
-	"errors"
 	"fmt"
 
 	"auth/consts"
@@ -27,7 +26,7 @@ func InitGenericRepository(client *gorm.DB) {
 func (r *repository) Create(user *models.User) error {
 	if err := dbClient.Create(&user).Error; err != nil {
 		log.Error(err)
-		return errors.New(rest_errors.Create(consts.User))
+		return rest_errors.ErrCreatingUser
 	}
 	return nil
 }
@@ -39,7 +38,7 @@ func (r *repository) Update(user *models.User) error {
 		Updates(&user)
 	if res.Error != nil {
 		log.Error(res.Error)
-		return errors.New(rest_errors.Update(consts.User))
+		return rest_errors.ErrUpdatingUser
 	}
 
 	return nil
@@ -50,7 +49,7 @@ func (r *repository) FindBy(field string, value interface{}) (*models.User, erro
 	query := fmt.Sprintf("%s = ?", field)
 	if err := dbClient.Where(query, value).First(&user).Error; err != nil {
 		log.Error(err)
-		return nil, errors.New(rest_errors.NotFound(consts.User))
+		return nil, rest_errors.UserNotFound
 	}
 	return &user, nil
 }
@@ -63,7 +62,7 @@ func (r *repository) All(pagination *types.Pagination) ([]*models.User, error) {
 
 	if res.Error != nil {
 		log.Error(res.Error)
-		return users, errors.New(rest_errors.Fetch(tableName))
+		return users, rest_errors.ErrFetchingUsers
 	}
 
 	CountQuery := paginations.GenerateFilteringCondition(dbClient, tableName, pagination, true)
@@ -82,7 +81,7 @@ func (r *repository) Count(paginationQuery *gorm.DB) (int64, error) {
 	var count int64 = 0
 	if err := paginationQuery.Model(&models.User{}).Count(&count).Error; err != nil {
 		log.Error(err)
-		return 0, errors.New(rest_errors.Count(consts.Users))
+		return 0, rest_errors.ErrCountingUsers
 	}
 	return count, nil
 }
@@ -98,11 +97,11 @@ func (r *repository) UpdateByInterface(id int, data map[string]interface{}) erro
 func (r *repository) Delete(id int) error {
 	res := dbClient.Where("id = ?", id).Delete(&models.User{})
 	if res.RowsAffected == 0 {
-		return errors.New(rest_errors.NotFound(consts.User))
+		return rest_errors.UserNotFound
 	}
 	if res.Error != nil {
 		log.Error(res.Error)
-		return errors.New(rest_errors.Delete(consts.User))
+		return rest_errors.ErrDeletingUser
 	}
 	return nil
 }

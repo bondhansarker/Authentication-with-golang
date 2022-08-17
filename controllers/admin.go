@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -39,7 +38,7 @@ func (ac *AdminController) FindUser(c echo.Context) error {
 	userId, err := strconv.Atoi(id)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	resp, err := ac.userService.GetUserFromCache(userId, true)
@@ -72,7 +71,7 @@ func (ac *AdminController) UpdateUser(c echo.Context) error {
 	var req types.UserCreateUpdateReq
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	id, err := methods.ParseParam(c, "id")
@@ -84,7 +83,7 @@ func (ac *AdminController) UpdateUser(c echo.Context) error {
 	userId, err := strconv.Atoi(id)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = userId
@@ -108,7 +107,7 @@ func (ac *AdminController) DeleteUser(c echo.Context) error {
 	var req types.UserDeleteReq
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 
 	}
 
@@ -121,7 +120,7 @@ func (ac *AdminController) DeleteUser(c echo.Context) error {
 	userId, err := strconv.Atoi(id)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(response.BuildBody(errors.New(rest_errors.ErrParsingRequestBody)))
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = userId
@@ -142,7 +141,7 @@ func checkAdminAuthorization(c echo.Context) error {
 		return c.JSON(response.BuildBody(err))
 	}
 	if user.IsAdmin == nil || *user.IsAdmin == false {
-		return c.JSON(response.BuildBody(errors.New(rest_errors.AccessForbidden)))
+		return c.JSON(response.BuildBody(rest_errors.AccessForbidden))
 	}
 	return nil
 }
