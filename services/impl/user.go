@@ -43,7 +43,8 @@ func (us *userService) CreateUser(userCreateReq *types.UserCreateUpdateReq) (*ty
 	if user.LoginProvider == consts.LoginProviderHink {
 		*user.Password = encryptPassword(*user.Password)
 	} else {
-		*user.Verified = true
+		trueValue := true
+		user.Verified = &trueValue
 	}
 
 	if err := us.userRepository.Create(user); err != nil {

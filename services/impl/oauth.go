@@ -51,9 +51,11 @@ func (ols *oAuthService) CreateUserWithProvider(email, provider string) (int, er
 		}
 	}
 
-	if err := methods.CopyStruct(dbUser, &user); err != nil {
-		log.Error(err)
-		return consts.DefaultInt, rest_errors.ErrLogin
+	if dbUser != nil {
+		if err := methods.CopyStruct(dbUser, &user); err != nil {
+			log.Error(err)
+			return consts.DefaultInt, rest_errors.ErrLogin
+		}
 	}
 
 	if user.LoginProvider != provider {
