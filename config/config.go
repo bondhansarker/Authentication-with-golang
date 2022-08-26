@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"auth/utils/log"
+
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 )
@@ -85,7 +86,7 @@ type Config struct {
 
 var config *Config
 
-func GetConfig() *Config {
+func AllConfig() *Config {
 	return config
 }
 

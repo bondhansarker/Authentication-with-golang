@@ -9,24 +9,39 @@ const (
 	LoginProviderApple    = "apple"
 	LoginProviderHink     = "hink"
 
-	UserIDHeader = "hink-user-id"
+	HeaderUserIdKey           = "hink-user-id"
+	HeaderUserEmailAddressKey = "hink-user-email"
+	HeaderIsAdminKey          = "hink-admin"
 
-	Hink     = "Hink"
-	Facebook = "Facebook"
-	Google   = "Google"
-	Apple    = "Apple"
+	// Model keywords
+	User  = "user"
+	Users = "users"
 
-	UserCreateMailApiPath            = "consumer/user-create"
-	UserForgotPasswordWithOtpApiPath = "forgot-password/otp"
-
+	// Reserved keywords
+	Token                 = "token"
+	ResetToken            = "reset token"
+	RefreshToken          = "refresh token"
+	AccessToken           = "access token"
+	JWTToken              = "jwt token"
+	OldToken              = "old token"
+	SocialLoginToken      = "social login token"
+	OTP                   = "OTP"
+	OTPNonce              = "OTP nonce"
+	Password              = "password"
+	ProfilePic            = "profile picture"
+	Stat                  = "user statistics"
+	MetaData              = "metadata"
 	UserForgotPasswordOtp = "forgot_"
+
+	// default values
+	DefaultInt = 0
 )
 
-func LoginProviders() map[string]string {
-	return map[string]string{
-		LoginProviderHink:     Hink,
-		LoginProviderFacebook: Facebook,
-		LoginProviderGoogle:   Google,
-		LoginProviderApple:    Apple,
+func LoginProviders() map[string]bool {
+	return map[string]bool{
+		LoginProviderHink:     true,
+		LoginProviderFacebook: true,
+		LoginProviderGoogle:   true,
+		LoginProviderApple:    true,
 	}
 }

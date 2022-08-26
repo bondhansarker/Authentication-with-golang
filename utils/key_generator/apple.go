@@ -1,4 +1,4 @@
-package applekeyutil
+package key_generator
 
 import (
 	"crypto/rsa"
@@ -8,9 +8,11 @@ import (
 	"math/big"
 	"net/http"
 	"time"
+
+	"auth/utils/log"
 )
 
-//key object fetched from APPLE_KEYS_URL
+// key object fetched from APPLE_KEYS_URL
 type AppleKey struct {
 	Kty string `json:"kty"`
 	Kid string `json:"kid"`
@@ -34,21 +36,25 @@ func GetApplePublicKeys(appleKeyUrl string, timeOut time.Duration) ([]AppleKey, 
 	c = http.Client{Timeout: timeOut * time.Second}
 	req, err = http.NewRequest("GET", appleKeyUrl, nil)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
 	resp, err = c.Do(req)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
 	bodyContents, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
 	err = json.Unmarshal(bodyContents, &keys)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
@@ -62,19 +68,19 @@ func GetPublicKeyObject(base64urlEncodedN string, base64urlEncodedE string) *rsa
 	var eInt int
 	var err error
 
-	//get the modulo
+	// get the modulo
 	decN, err = base64.RawURLEncoding.DecodeString(base64urlEncodedN)
 	if err != nil {
 		return nil
 	}
 	pub.N = new(big.Int)
 	pub.N.SetBytes(decN)
-	//get exponent
+	// get exponent
 	decE, err = base64.RawURLEncoding.DecodeString(base64urlEncodedE)
 	if err != nil {
 		return nil
 	}
-	//convert the bytes into int
+	// convert the bytes into int
 	for _, v := range decE {
 		eInt = eInt << 8
 		eInt = eInt | int(v)

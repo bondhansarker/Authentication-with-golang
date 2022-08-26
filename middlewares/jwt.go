@@ -8,23 +8,23 @@ import (
 	"strings"
 
 	"auth/config"
-	"auth/log"
 	"auth/repositories"
 	"auth/types"
-	"auth/utils/methodutil"
+	"auth/utils/log"
+	"auth/utils/methods"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 )
 
-type JWTMiddleWare struct {
-	config          *config.Config
-	redisRepository *repositories.RedisRepository
+type JWTMiddleware struct {
+	redisConfig     *config.RedisConfig
+	cacheRepository repositories.ICache
 }
 
-func NewJWTMiddleWare(redisRepository *repositories.RedisRepository) *JWTMiddleWare {
-	return &JWTMiddleWare{
-		config:          config.GetConfig(),
-		redisRepository: redisRepository,
+func NewJWTMiddleWare(redisConfig *config.RedisConfig, cacheRepository repositories.ICache) *JWTMiddleware {
+	return &JWTMiddleware{
+		redisConfig:     redisConfig,
+		cacheRepository: cacheRepository,
 	}
 }
 
@@ -48,7 +48,7 @@ type (
 		SuccessHandler JWTSuccessHandler
 
 		// ErrorHandler defines a function which is executed for an invalid token.
-		// It may be used to define a custom JWT error.
+		// It may be used to define a custom JWT rest_errors.
 		ErrorHandler JWTErrorHandler
 
 		// ErrorHandlerWithContext is almost identical to ErrorHandler, but it's passed the current context.
@@ -133,20 +133,20 @@ func DefaultSkipper(echo.Context) bool {
 // JWT returns a JSON Web Token (JWT) auth middleware.
 //
 // For valid token, it sets the user in context and calls next handler.
-// For invalid token, it returns "401 - Unauthorized" error.
-// For missing token, it returns "400 - Bad Request" error.
+// For invalid token, it returns "401 - Unauthorized" rest_errors.
+// For missing token, it returns "400 - Bad Request" rest_errors.
 //
 // See: https://jwt.io/introduction
 // See `JWTConfig.TokenLookup`
-func (jwtObject *JWTMiddleWare) JWT(key interface{}) echo.MiddlewareFunc {
+func (jmr *JWTMiddleware) JWT(key interface{}) echo.MiddlewareFunc {
 	c := DefaultJWTConfig
 	c.SigningKey = key
-	return jwtObject.JWTWithConfig(c)
+	return jmr.JWTWithConfig(c)
 }
 
 // JWTWithConfig returns a JWT auth middleware with config.
 // See: `JWT()`.
-func (jwtObject *JWTMiddleWare) JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
+func (jmr *JWTMiddleware) JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
 	// Defaults
 	if config.Skipper == nil {
 		config.Skipper = DefaultJWTConfig.Skipper
@@ -235,21 +235,21 @@ func (jwtObject *JWTMiddleWare) JWTWithConfig(config JWTConfig) echo.MiddlewareF
 			}
 
 			tokenDetails := &types.JwtToken{}
-			if err := methodutil.MapToStruct(claims, tokenDetails); err != nil {
+			if err := methods.MapToStruct(claims, tokenDetails); err != nil {
 				log.Info(err)
 				return ErrJWTMissing
 			}
 
-			redisConfig := jwtObject.config.Redis
+			redisConfig := jmr.redisConfig
 			// Check if access_uuid corresponds to user_id in Redis
-			redisUserId, err := jwtObject.redisRepository.GetInt(redisConfig.AccessUuidPrefix + tokenDetails.AccessUuid)
+			redisUserId, err := jmr.cacheRepository.GetInt(redisConfig.AccessUuidPrefix + tokenDetails.AccessUuid)
 			if err != nil || redisUserId != tokenDetails.UserID {
-				log.Error("error: ", err, " | redis user: ", redisUserId, " | token user: ", tokenDetails.UserID)
+				log.Error("rest_errors: ", err, " | redis user: ", redisUserId, " | token user: ", tokenDetails.UserID)
 				return ErrJWTMissing
 			}
 
 			user := &types.UserResp{}
-			if err := jwtObject.redisRepository.GetStruct(redisConfig.UserPrefix+strconv.Itoa(tokenDetails.UserID), &user); err != nil {
+			if err := jmr.cacheRepository.GetStruct(redisConfig.UserPrefix+strconv.Itoa(tokenDetails.UserID), &user); err != nil {
 				log.Error(err)
 				return ErrJWTMissing
 			}

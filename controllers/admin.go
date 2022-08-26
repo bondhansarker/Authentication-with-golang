@@ -4,127 +4,144 @@ import (
 	"net/http"
 	"strconv"
 
-	"auth/config"
+	"auth/consts"
+	"auth/rest_errors"
 	"auth/services"
+	"auth/utils/response"
+
+	"auth/utils/log"
+	"auth/utils/paginations"
+
 	"auth/types"
-	"auth/utils/methodutil"
-	"auth/utils/msgutil"
+	"auth/utils/methods"
 	"github.com/labstack/echo/v4"
-	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type AdminController struct {
-	config      *config.Config
-	userService *services.UserService
+	userService services.IUserService
 }
 
-func NewAdminController(userService *services.UserService) *AdminController {
+func NewAdminController(userService services.IUserService) *AdminController {
 	return &AdminController{
-		config:      config.GetConfig(),
 		userService: userService,
 	}
 }
 
-func (ac *AdminController) User(c echo.Context) error {
-	isAdmin, err := ac.userService.IsAdmin(&c)
+func (ac *AdminController) FindUser(c echo.Context) error {
+	checkAdminAuthorization(c)
+	id, err := methods.ParseParam(c, "id")
 	if err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
-	}
-	if isAdmin != true {
-		return c.JSON(http.StatusForbidden, msgutil.NoAccessMsg())
+		return c.JSON(response.BuildBody(err))
 	}
 
-	id, parseErr := methodutil.ParseParam(c, "id")
-	if parseErr != nil {
-		log.Error(parseErr)
-		return c.JSON(http.StatusBadRequest, parseErr)
-	}
 	userId, err := strconv.Atoi(id)
 	if err != nil {
-		log.Error(parseErr)
-		return c.JSON(http.StatusBadRequest, parseErr)
+		log.Error(err)
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
-	res, err := ac.userService.GetUserResponse(userId, true)
+	resp, err := ac.userService.GetUserFromCache(userId, true)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
-		}
-		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
 
-	return c.JSON(http.StatusOK, res)
+	return c.JSON(http.StatusOK, resp)
 }
 
-func (ac *AdminController) Users(c echo.Context) error {
-	isAdmin, err := ac.userService.IsAdmin(&c)
+func (ac *AdminController) FindUsers(c echo.Context) error {
+	checkAdminAuthorization(c)
+	pagination := paginations.GeneratePaginationRequest(&c)
+	err := ac.userService.GetUsers(pagination)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
-	}
-	if isAdmin != true {
-		return c.JSON(http.StatusForbidden, msgutil.NoAccessMsg())
-	}
-	pagination := GeneratePaginationRequest(&c, ac.config)
-	err = ac.userService.GetUsers(pagination)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
-		}
-		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+		return c.JSON(response.BuildBody(err))
 	}
 	resp := types.PaginationResp{}
-	if err = methodutil.CopyStruct(pagination, &resp); err != nil {
+	if err = methods.CopyStruct(pagination, &resp); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+		return c.JSON(response.BuildBody(err))
 	}
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (ac *AdminController) Update(c echo.Context) error {
+func (ac *AdminController) UpdateUser(c echo.Context) error {
+	checkAdminAuthorization(c)
 	var req types.UserCreateUpdateReq
-	isAdmin, err := ac.userService.IsAdmin(&c)
+	if err := c.Bind(&req); err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
+	}
+
+	id, err := methods.ParseParam(c, "id")
 	if err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
-	}
-	if isAdmin != true {
-		return c.JSON(http.StatusForbidden, msgutil.NoAccessMsg())
+		return c.JSON(response.BuildBody(err))
 	}
 
-	if err = c.Bind(&req); err != nil {
-		log.Error(err)
-		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
-	}
-
-	id, parseErr := methodutil.ParseParam(c, "id")
-	if parseErr != nil {
-		log.Error(parseErr)
-		return c.JSON(http.StatusBadRequest, parseErr)
-	}
 	userId, err := strconv.Atoi(id)
 	if err != nil {
-		log.Error(parseErr)
-		return c.JSON(http.StatusBadRequest, parseErr)
+		log.Error(err)
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = userId
 
 	if err = req.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Error:   err,
-			Message: msgutil.ValidationErrorMsg(),
-		})
-	}
-	minimalUser, err := ac.userService.UpdateUser(&req)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
-		}
-		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+		log.Error(err)
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
-	return c.JSON(http.StatusOK, minimalUser)
+	userResp, err := ac.userService.UpdateUser(&req)
+	if err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
+	}
+
+	return c.JSON(http.StatusOK, userResp)
+}
+
+func (ac *AdminController) DeleteUser(c echo.Context) error {
+	checkAdminAuthorization(c)
+	var req types.UserDeleteReq
+	if err := c.Bind(&req); err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
+
+	}
+
+	id, err := methods.ParseParam(c, "id")
+	if err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
+	}
+
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
+	}
+
+	req.ID = userId
+
+	if err := ac.userService.DeleteUser(&req); err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// private
+
+func checkAdminAuthorization(c echo.Context) error {
+	user, err := GetUserFromContext(&c)
+	if err != nil {
+		return c.JSON(response.BuildBody(err))
+	}
+	if user.IsAdmin == nil || *user.IsAdmin == false {
+		return c.JSON(response.BuildBody(rest_errors.AccessForbidden))
+	}
+	return nil
 }

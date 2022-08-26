@@ -3,20 +3,21 @@ package controllers
 import (
 	"net/http"
 
-	"auth/log"
+	"auth/consts"
+	"auth/rest_errors"
 	"auth/services"
+	"auth/utils/response"
+
 	"auth/types"
-	"auth/utils/errutil"
-	"auth/utils/msgutil"
+	"auth/utils/log"
 	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
 )
 
 type UserController struct {
-	userService *services.UserService
+	userService services.IUserService
 }
 
-func NewUserController(userService *services.UserService) *UserController {
+func NewUserController(userService services.IUserService) *UserController {
 	return &UserController{
 		userService: userService,
 	}
@@ -25,19 +26,15 @@ func NewUserController(userService *services.UserService) *UserController {
 func (uc *UserController) GetUser(c echo.Context) error {
 	var user *types.LoggedInUser
 	var err error
-	if user, err = uc.userService.GetUserFromHeader(&c); err != nil {
+	if user, err = GetUserFromHeader(&c); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
+		return c.JSON(response.BuildBody(err))
 	}
-
-	res, err := uc.userService.GetUserResponse(user.ID, true)
+	res, err := uc.userService.GetUserFromCache(user.ID, true)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
-		}
-		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
-
 	return c.JSON(http.StatusOK, res)
 }
 
@@ -46,232 +43,187 @@ func (uc *UserController) UpdateUser(c echo.Context) error {
 	var user *types.LoggedInUser
 	var err error
 
-	if user, err = uc.userService.GetUserFromHeader(&c); err != nil {
+	if user, err = GetUserFromHeader(&c); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
+		return c.JSON(response.BuildBody(err))
 	}
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = user.ID
-	req.Verified = nil
-
 	if err = req.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: msgutil.ValidationErrorMsg(),
-			Error:   err,
-		})
-	}
-	minimalUser, err := uc.userService.UpdateUser(&req)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
-		}
-		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+		log.Error(err)
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
-	return c.JSON(http.StatusOK, minimalUser)
+	userResp, err := uc.userService.UpdateUser(&req)
+	if err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
+	}
+	return c.JSON(http.StatusOK, userResp)
 }
 
 func (uc *UserController) UpdateProfilePic(c echo.Context) error {
 	var req types.ProfilePicUpdateReq
-	var user *types.LoggedInUser
-	var err error
 
-	if user, err = uc.userService.GetUserFromHeader(&c); err != nil {
+	user, err := GetUserFromHeader(&c)
+	if err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
+		return c.JSON(response.BuildBody(err))
 	}
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = user.ID
 
-	minimalUser, err := uc.userService.UpdateProfilePic(&req)
+	userResp, err := uc.userService.UpdateUserProfilePic(&req)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
-		}
-		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
 
-	return c.JSON(http.StatusOK, minimalUser)
+	return c.JSON(http.StatusOK, userResp)
 }
 
 func (uc *UserController) UpdateUserStat(c echo.Context) error {
 	var req types.UserStatUpdateReq
-	var user *types.LoggedInUser
-	var err error
 
-	if user, err = uc.userService.GetUserFromHeader(&c); err != nil {
+	user, err := GetUserFromHeader(&c)
+	if err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusNotFound, msgutil.NoLoggedInUserMsg())
+		return c.JSON(response.BuildBody(err))
 	}
 
 	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	req.ID = user.ID
 
-	minimalUser, err := uc.userService.UpdateUserStat(&req)
+	userResp, err := uc.userService.UpdateUserStat(&req)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, msgutil.EntityNotFoundMsg("User"))
-		}
-		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
 
-	return c.JSON(http.StatusOK, minimalUser)
+	return c.JSON(http.StatusOK, userResp)
 }
 
 func (uc *UserController) ChangePassword(c echo.Context) error {
-	loggedInUser, err := uc.userService.GetUserFromContext(&c)
+	loggedInUser, err := GetUserFromContext(&c)
 	if err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusUnauthorized, msgutil.NoLoggedInUserMsg())
+		return c.JSON(response.BuildBody(err))
 	}
 
-	body := &types.ChangePasswordReq{}
+	req := types.ChangePasswordReq{}
 
-	if err := c.Bind(&body); err != nil {
+	if err = c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
-	if err = body.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: msgutil.ValidationErrorMsg(),
-			Error:   err,
-		})
+	if err = req.Validate(); err != nil {
+		log.Error(err)
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
-	if body.OldPassword == body.NewPassword {
-		return c.JSON(http.StatusBadRequest, msgutil.SamePasswordErrorMsg())
+	if req.OldPassword == req.NewPassword {
+		return c.JSON(response.BuildBody(rest_errors.ErrSamePassword))
 	}
 
-	if err := uc.userService.ChangePassword(loggedInUser.ID, body); err != nil {
-		switch err {
-		case errutil.ErrInvalidPassword:
-			return c.JSON(http.StatusBadRequest, msgutil.InvalidOldPasswordMsg())
-		default:
-			return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
-		}
+	if err := uc.userService.ChangePassword(loggedInUser.ID, &req); err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
 
 	return c.NoContent(http.StatusOK)
 }
 
 func (uc *UserController) ForgotPassword(c echo.Context) error {
-	body := &types.ForgotPasswordReq{}
+	req := types.ForgotPasswordReq{}
 
-	if err := c.Bind(&body); err != nil {
+	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
-	if err := body.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: msgutil.ValidationErrorMsg(),
-			Error:   err,
-		})
+	if err := req.Validate(); err != nil {
+		log.Error(err)
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
-	resp, err := uc.userService.ForgotPassword(body.Email)
-	if err != nil && err == gorm.ErrRecordNotFound {
-		return c.JSON(http.StatusOK, map[string]interface{}{"message": msgutil.ForgotPasswordWithOtpMsg(body.Email)})
-	}
-	if err != nil && err == errutil.ErrSendingEmail {
-		return c.JSON(http.StatusInternalServerError, msgutil.MailSendingFailedMsg("Password Reset"))
+	resp, err := uc.userService.ForgotPassword(req.Email)
+	if err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
 
 	return c.JSON(http.StatusOK, resp)
 }
 
 func (uc *UserController) VerifyResetPassword(c echo.Context) error {
-	req := &types.VerifyResetPasswordReq{}
+	req := types.VerifyResetPasswordReq{}
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err := req.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: msgutil.ValidationErrorMsg(),
-			Error:   err,
-		})
+		log.Error(err)
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
-	if err := uc.userService.VerifyResetPassword(req); err != nil {
-		switch err {
-		case errutil.ErrParseJwt,
-			errutil.ErrInvalidPasswordResetToken:
-			return c.JSON(http.StatusUnauthorized, msgutil.InvalidTokenMsg("reset_token"))
-		case errutil.ErrInvalidOtpNonce:
-			return c.JSON(http.StatusBadRequest, msgutil.InvalidTokenMsg("otp nonce"))
-		case errutil.ErrInvalidOtp:
-			return c.JSON(http.StatusBadRequest, msgutil.InvalidTokenMsg("otp"))
-		case gorm.ErrRecordNotFound:
-			return c.JSON(http.StatusUnauthorized, msgutil.EntityNotFoundMsg("user"))
-		default:
-			return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
-		}
+	if err := uc.userService.VerifyResetPassword(&req); err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
 
 	return c.NoContent(http.StatusOK)
 }
 
 func (uc *UserController) ResendForgotPasswordOtp(c echo.Context) error {
-	req := &types.ForgotPasswordOtpResendReq{}
+	req := types.ForgotPasswordOtpResendReq{}
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err := req.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: msgutil.ValidationErrorMsg(),
-			Error:   err,
-		})
+		log.Error(err)
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
 	res, err := uc.userService.ResendForgotPasswordOtp(req.Nonce)
 	if err != nil {
-		switch err {
-		case errutil.ErrInvalidOtpNonce:
-			return c.JSON(http.StatusBadRequest, msgutil.InvalidTokenMsg("otp nonce"))
-		case errutil.ErrInvalidOtp:
-			return c.JSON(http.StatusBadRequest, msgutil.InvalidTokenMsg("otp"))
-		default:
-			return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
-		}
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
 
 	return c.JSON(http.StatusCreated, res)
 }
 
 func (uc *UserController) ResetPassword(c echo.Context) error {
-	req := &types.ResetPasswordReq{}
+	req := types.ResetPasswordReq{}
 
 	if err := c.Bind(&req); err != nil {
 		log.Error(err)
-		return c.JSON(http.StatusBadRequest, msgutil.RequestBodyParseErrorResponseMsg())
+		return c.JSON(response.BuildBody(rest_errors.ErrParsingRequestBody))
 	}
 
 	if err := req.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, &types.ValidationError{
-			Message: msgutil.ValidationErrorMsg(),
-			Error:   err,
-		})
+		log.Error(err)
+		return c.JSON(response.ValidationErrors(err, consts.User))
 	}
 
 	verifyReq := &types.VerifyResetPasswordReq{
@@ -280,19 +232,13 @@ func (uc *UserController) ResetPassword(c echo.Context) error {
 	}
 
 	if err := uc.userService.VerifyResetPassword(verifyReq); err != nil {
-		switch err {
-		case errutil.ErrParseJwt,
-			errutil.ErrInvalidPasswordResetToken:
-			return c.JSON(http.StatusUnauthorized, msgutil.InvalidTokenMsg("reset_token"))
-		case gorm.ErrRecordNotFound:
-			return c.JSON(http.StatusUnauthorized, msgutil.EntityNotFoundMsg("user"))
-		default:
-			return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
-		}
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
 
-	if err := uc.userService.ResetPassword(req); err != nil {
-		return c.JSON(http.StatusInternalServerError, msgutil.SomethingWentWrongMsg())
+	if err := uc.userService.ResetPassword(&req); err != nil {
+		log.Error(err)
+		return c.JSON(response.BuildBody(err))
 	}
 
 	return c.NoContent(http.StatusOK)

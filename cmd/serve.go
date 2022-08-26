@@ -1,19 +1,16 @@
 package cmd
 
 import (
-	"os"
+	repoImpl "auth/repositories/impl"
+	serviceImpl "auth/services/impl"
 
 	"auth/config"
-	"auth/connections"
+	"auth/connection"
 	"auth/controllers"
 	"auth/middlewares"
-	"auth/repositories"
 	"auth/routes"
 	"auth/server"
-	"auth/services"
 	"github.com/labstack/echo/v4"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/spf13/cobra"
 )
 
@@ -23,40 +20,42 @@ var serveCmd = &cobra.Command{
 }
 
 func serve(cmd *cobra.Command, args []string) {
-	// Logger
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
-
-	// Config
+	// config
 	config.Load()
+	cfg := config.AllConfig()
 
-	// Mysql
-	var dbClient = connections.NewDbClient()
+	// connection
+	connection.Redis(cfg.Redis)
+	connection.Db(cfg.Db)
 
-	// Redis
-	var redisClient = connections.NewRedisClient()
+	// mysql
+	var dbClient = connection.DbClient()
 
-	// Repositories
-	var redisRepository = repositories.NewRedisRepository(redisClient)
-	var userRepository = repositories.NewUserRepository(dbClient, redisRepository)
+	// redis
+	var cacheClient = connection.RedisClient()
 
-	// middlewares
-	var jwtMiddleware = middlewares.NewJWTMiddleWare(redisRepository)
+	// repositories
+	var userRepo = repoImpl.NewUserRepository(dbClient)
+	var cacheRepo = repoImpl.NewRedisRepository(cacheClient)
+	var tokenRepo = repoImpl.NewJWTRepository(cfg, cacheRepo)
 
 	// services
-	var jwtService = services.NewJWTService(redisRepository)
-	var userService = services.NewUserService(redisRepository, userRepository)
-	var authService = services.NewAuthService(redisRepository, jwtService, userService)
+	var userSvc = serviceImpl.NewUserService(cfg, cacheRepo, userRepo)
+	var oAuthLoginSvc = serviceImpl.NewOAuthService(cfg, userSvc)
+	var authSvc = serviceImpl.NewAuthService(cfg, cacheRepo, tokenRepo, userSvc, oAuthLoginSvc)
+
+	// middlewares
+	var middleware = middlewares.NewJWTMiddleWare(cfg.Redis, cacheRepo)
 
 	// controllers
-	var authController = controllers.NewAuthController(userService, authService)
-	var userController = controllers.NewUserController(userService)
-	var adminController = controllers.NewAdminController(userService)
+	var authCtr = controllers.NewAuthController(authSvc)
+	var userCtr = controllers.NewUserController(userSvc)
+	var adminCtr = controllers.NewAdminController(userSvc)
 
 	// Server
-	var echo_ = echo.New()
-	var Routes = routes.New(echo_, jwtMiddleware, authController, userController, adminController)
-	var Server = server.New(echo_)
+	var framework = echo.New()
+	var Routes = routes.New(framework, middleware, authCtr, userCtr, adminCtr)
+	var Server = server.New(cfg, framework)
 
 	Routes.Init()
 	Server.Start()

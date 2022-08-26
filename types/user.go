@@ -4,20 +4,21 @@ import (
 	"regexp"
 	"strings"
 
-	"auth/connections"
+	"auth/rest_errors"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
+
+	"auth/connection"
 	"auth/consts"
 	"auth/models"
-	"auth/utils/errutil"
-	"auth/utils/methodutil"
+	"auth/utils/methods"
 	"github.com/dgrijalva/jwt-go"
 	"gorm.io/gorm"
 
 	v "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
 type LoggedInUser struct {
-	ID          int    `json:"user_id"`
+	ID          int    `json:"id"`
 	AccessUuid  string `json:"access_uuid"`
 	RefreshUuid string `json:"refresh_uuid"`
 	IsAdmin     *bool  `json:"is_admin"`
@@ -51,25 +52,7 @@ type UserCreateUpdateReq struct {
 	Website       string `json:"website"`
 	Bio           string `json:"bio"`
 	Gender        string `json:"gender"`
-	Verified      *bool  `json:"verified"`
 	LoginProvider string `json:"login_provider"`
-}
-
-type UserStatUpdateReq struct {
-	ID              int    `json:"id"`
-	DownloadCount   *int64 `json:"download_count" `
-	UploadCount     *int64 `json:"upload_count"`
-	IncrementUpload *bool  `json:"increment_upload"`
-}
-
-type ProfilePicUpdateReq struct {
-	ID                  int     `json:"id"`
-	ProfilePic          *string `json:"profile_pic"`
-	ProfilePicExtension *string `json:"profile_pic_extension"`
-}
-
-func (u UserCreateUpdateReq) isCreating() bool {
-	return u.ID == 0
 }
 
 func (u UserCreateUpdateReq) Validate() error {
@@ -105,11 +88,15 @@ func (u UserCreateUpdateReq) Validate() error {
 	)
 }
 
+func (u UserCreateUpdateReq) isCreating() bool {
+	return u.ID == 0
+}
+
 func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	// if !u.isCreating() { // no need to check while doing "update"
 	// 	return nil
 	// }
-	dbClient := connections.Db()
+	dbClient := connection.DbClient()
 	user := &models.User{}
 	userName := strings.ToLower(u.UserName)
 	var res *gorm.DB
@@ -121,10 +108,10 @@ func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 	if res.RowsAffected > 0 {
 		if user.ID != u.ID || u.ID == 0 {
 			if value == "email" && user.Email == u.Email {
-				return errutil.ErrEmailAlreadyRegistered
+				return rest_errors.ErrEmailAlreadyRegistered
 			}
 			if value == "user_name" && userName != "" && user.UserName == userName {
-				return errutil.ErrUserNameAlreadyRegistered
+				return rest_errors.ErrUserNameAlreadyRegistered
 			}
 		}
 	}
@@ -132,24 +119,24 @@ func (u UserCreateUpdateReq) isAlreadyRegistered(value interface{}) error {
 }
 
 func (u UserCreateUpdateReq) disallowEmailUpdate(value interface{}) error {
-	if !u.isCreating() && !methodutil.IsEmpty(u.Email) {
-		return errutil.ErrEmailUpdateNotAllowed
+	if !u.isCreating() && !methods.IsEmpty(u.Email) {
+		return rest_errors.ErrEmailUpdateNotAllowed
 	}
 
 	return nil
 }
 
 func (u UserCreateUpdateReq) disallowUserNameUpdate(value interface{}) error {
-	if !u.isCreating() && !methodutil.IsEmpty(u.UserName) {
-		return errutil.ErrUserNameUpdateNotAllowed
+	if !u.isCreating() && !methods.IsEmpty(u.UserName) {
+		return rest_errors.ErrUserNameUpdateNotAllowed
 	}
 
 	return nil
 }
 
 func (u UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
-	if !u.isCreating() && !methodutil.IsEmpty(u.Password) {
-		return errutil.ErrPasswordUpdateNotAllowed
+	if !u.isCreating() && !methods.IsEmpty(u.Password) {
+		return rest_errors.ErrPasswordUpdateNotAllowed
 	}
 
 	return nil
@@ -157,7 +144,7 @@ func (u UserCreateUpdateReq) disallowPasswordUpdate(value interface{}) error {
 
 func (u UserCreateUpdateReq) isValidPasswordFormat(value interface{}) error {
 	if u.isCreating() && u.LoginProvider == consts.LoginProviderHink {
-		return methodutil.ValidatePassword(u.Password)
+		return methods.ValidatePassword(u.Password)
 	}
 
 	return nil
@@ -171,7 +158,7 @@ func (u UserCreateUpdateReq) loginProviderValid(value interface{}) error {
 	loginProviders := consts.LoginProviders()
 
 	if _, ok := loginProviders[u.LoginProvider]; !ok {
-		return errutil.ErrInvalidLoginProvider
+		return rest_errors.ErrInvalidLoginProvider
 	}
 
 	return nil
@@ -215,4 +202,22 @@ func (eid IdUrlParam) Validate() error {
 	return v.ValidateStruct(&eid,
 		v.Field(&eid.ID, v.Match(regexp.MustCompile("^[0-9]+$")).Error("invalid id")),
 	)
+}
+
+type UserStatUpdateReq struct {
+	ID              int    `json:"id"`
+	DownloadCount   *int64 `json:"download_count" `
+	UploadCount     *int64 `json:"upload_count"`
+	IncrementUpload *bool  `json:"increment_upload"`
+}
+
+type ProfilePicUpdateReq struct {
+	ID                  int     `json:"id"`
+	ProfilePic          *string `json:"profile_pic"`
+	ProfilePicExtension *string `json:"profile_pic_extension"`
+}
+
+type UserDeleteReq struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
 }
