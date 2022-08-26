@@ -21,7 +21,7 @@ spec:
           value: consul.consul:8500
         - name: CONSUL_PATH
           value: auth
-        image: asia-southeast1-docker.pkg.dev/strategic-grove-346615/docker/auth:dev-0.0.1
+        image: asia-southeast1-docker.pkg.dev/strategic-grove-346615/docker/auth:dev
         imagePullPolicy: Always
         name: auth
         ports:
