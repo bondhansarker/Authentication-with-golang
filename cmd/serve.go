@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"os"
-
-	"auth/models"
 	repoImpl "auth/repositories/impl"
 	serviceImpl "auth/services/impl"
 
@@ -13,9 +10,7 @@ import (
 	"auth/middlewares"
 	"auth/routes"
 	"auth/server"
-	"auth/utils/log"
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -25,41 +20,32 @@ var serveCmd = &cobra.Command{
 }
 
 func serve(cmd *cobra.Command, args []string) {
-	// logger
-	// Log as JSON instead of the default ASCII formatter.
-	log.SetLogFormatter(&logrus.TextFormatter{})
-	log.SetLogOutput(os.Stdout)
-	log.SetLogLevel(logrus.InfoLevel)
-
 	// config
 	config.Load()
+	cfg := config.AllConfig()
 
 	// connection
-	connection.Redis()
-	connection.Db()
+	connection.Redis(cfg.Redis)
+	connection.Db(cfg.Db)
 
 	// mysql
 	var dbClient = connection.DbClient()
 
 	// redis
-	var redisClient = connection.RedisClient()
-
-	// generics
-	models.InitGenericModel(dbClient)
-	repoImpl.InitGenericRepository(dbClient)
+	var cacheClient = connection.RedisClient()
 
 	// repositories
 	var userRepo = repoImpl.NewUserRepository(dbClient)
+	var cacheRepo = repoImpl.NewRedisRepository(cacheClient)
+	var tokenRepo = repoImpl.NewJWTRepository(cfg, cacheRepo)
 
 	// services
-	var cacheSvc = serviceImpl.NewRedisService(redisClient)
-	var tokenSvc = serviceImpl.NewJWTService(cacheSvc)
-	var userSvc = serviceImpl.NewUserService(cacheSvc, userRepo)
-	var oAuthLoginSvc = serviceImpl.NewOAuthService(userSvc)
-	var authSvc = serviceImpl.NewAuthService(cacheSvc, tokenSvc, userSvc, oAuthLoginSvc)
+	var userSvc = serviceImpl.NewUserService(cfg, cacheRepo, userRepo)
+	var oAuthLoginSvc = serviceImpl.NewOAuthService(cfg, userSvc)
+	var authSvc = serviceImpl.NewAuthService(cfg, cacheRepo, tokenRepo, userSvc, oAuthLoginSvc)
 
 	// middlewares
-	var middleware = middlewares.NewJWTMiddleWare(cacheSvc)
+	var middleware = middlewares.NewJWTMiddleWare(cfg.Redis, cacheRepo)
 
 	// controllers
 	var authCtr = controllers.NewAuthController(authSvc)
@@ -67,9 +53,9 @@ func serve(cmd *cobra.Command, args []string) {
 	var adminCtr = controllers.NewAdminController(userSvc)
 
 	// Server
-	var echo_ = echo.New()
-	var Routes = routes.New(echo_, middleware, authCtr, userCtr, adminCtr)
-	var Server = server.New(echo_)
+	var framework = echo.New()
+	var Routes = routes.New(framework, middleware, authCtr, userCtr, adminCtr)
+	var Server = server.New(cfg, framework)
 
 	Routes.Init()
 	Server.Start()

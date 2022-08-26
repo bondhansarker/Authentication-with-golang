@@ -1,27 +1,27 @@
-package serviceImpl
+package impl
 
 import (
-	"auth/services"
 	"encoding/json"
 	"strconv"
 	"time"
 
+	"auth/repositories"
 	"github.com/go-redis/redis"
 )
 
-type redisService struct {
+type redisRepository struct {
 	client *redis.Client
 }
 
-func NewRedisService(client *redis.Client) services.ICache {
-	return &redisService{client: client}
+func NewRedisRepository(client *redis.Client) repositories.ICache {
+	return &redisRepository{client: client}
 }
 
-func (rs *redisService) Set(key string, value interface{}, ttl time.Duration) error {
+func (rs *redisRepository) Set(key string, value interface{}, ttl time.Duration) error {
 	return rs.client.Set(key, value, ttl*time.Second).Err()
 }
 
-func (rs *redisService) SetStruct(key string, value interface{}, ttl time.Duration) error {
+func (rs *redisRepository) SetStruct(key string, value interface{}, ttl time.Duration) error {
 	serializedValue, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -29,11 +29,11 @@ func (rs *redisService) SetStruct(key string, value interface{}, ttl time.Durati
 	return rs.client.Set(key, string(serializedValue), ttl*time.Second).Err()
 }
 
-func (rs *redisService) Get(key string) (string, error) {
+func (rs *redisRepository) Get(key string) (string, error) {
 	return rs.client.Get(key).Result()
 }
 
-func (rs *redisService) GetInt(key string) (int, error) {
+func (rs *redisRepository) GetInt(key string) (int, error) {
 	str, err := rs.client.Get(key).Result()
 	if err != nil {
 		return 0, err
@@ -42,7 +42,7 @@ func (rs *redisService) GetInt(key string) (int, error) {
 	return strconv.Atoi(str)
 }
 
-func (rs *redisService) GetStruct(key string, outputStruct interface{}) error {
+func (rs *redisRepository) GetStruct(key string, outputStruct interface{}) error {
 	serializedValue, err := rs.client.Get(key).Result()
 	if err != nil {
 		return err
@@ -55,11 +55,11 @@ func (rs *redisService) GetStruct(key string, outputStruct interface{}) error {
 	return nil
 }
 
-func (rs *redisService) Del(keys ...string) error {
+func (rs *redisRepository) Del(keys ...string) error {
 	return rs.client.Del(keys...).Err()
 }
 
-func (rs *redisService) DelPattern(pattern string) error {
+func (rs *redisRepository) DelPattern(pattern string) error {
 	iter := rs.client.Scan(0, pattern, 0).Iterator()
 
 	for iter.Next() {

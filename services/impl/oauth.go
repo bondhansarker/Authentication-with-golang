@@ -26,11 +26,13 @@ import (
 )
 
 type oAuthService struct {
+	config      *config.Config
 	userService services.IUserService
 }
 
-func NewOAuthService(userService services.IUserService) services.IOAuthService {
+func NewOAuthService(config *config.Config, userService services.IUserService) services.IOAuthService {
 	return &oAuthService{
+		config:      config,
 		userService: userService,
 	}
 }
@@ -167,13 +169,13 @@ func (ols *oAuthService) IsValidAppleIdToken(idToken string) bool {
 		return false
 	}
 
-	conf := config.AppleLogin()
-	if tokenInfo.Issuer != conf.AppleIdUrl {
+	appleConf := ols.config.AppleLogin
+	if tokenInfo.Issuer != appleConf.AppleIdUrl {
 		log.Error("invalid Apple id token issuer  ", tokenInfo.Issuer)
 		return false
 	}
 
-	if tokenInfo.Audience != conf.AppBundleID {
+	if tokenInfo.Audience != appleConf.AppBundleID {
 		log.Error("invalid Apple idToken audience  ", tokenInfo.Audience)
 		return false
 	}
@@ -182,7 +184,7 @@ func (ols *oAuthService) IsValidAppleIdToken(idToken string) bool {
 	//	return false
 	// }
 
-	keys, err := key_generator.GetApplePublicKeys(conf.ApplePublicKeyUrl, conf.ApplePublicKeyTimeout)
+	keys, err := key_generator.GetApplePublicKeys(appleConf.ApplePublicKeyUrl, appleConf.ApplePublicKeyTimeout)
 	if err != nil {
 		log.Error(err)
 		return false
@@ -222,7 +224,7 @@ func (ols *oAuthService) IsValidAppleIdToken(idToken string) bool {
 }
 
 func (ols *oAuthService) IsValidGoogleIdToken(idToken string) bool {
-	google, err := oauth2.NewService(context.Background(), option.WithAPIKey(config.App().GoogleApiKey))
+	google, err := oauth2.NewService(context.Background(), option.WithAPIKey(ols.config.App.GoogleApiKey))
 	if err != nil {
 		log.Error(err)
 		return false

@@ -5,6 +5,7 @@ import (
 
 	"auth/config"
 	"auth/consts"
+	"auth/repositories"
 	"auth/rest_errors"
 	"auth/services"
 	"auth/types"
@@ -17,19 +18,21 @@ import (
 )
 
 type authService struct {
-	cacheService services.ICache
-	tokenService services.IToken
-	userService  services.IUserService
-	oAuthService services.IOAuthService
+	config          *config.Config
+	cacheRepository repositories.ICache
+	tokenRepository repositories.IToken
+	userService     services.IUserService
+	oAuthService    services.IOAuthService
 }
 
-func NewAuthService(cacheService services.ICache, tokenService services.IToken,
+func NewAuthService(config *config.Config, cacheRepository repositories.ICache, tokenRepository repositories.IToken,
 	userService services.IUserService, oAuthService services.IOAuthService) services.IAuthService {
 	return &authService{
-		cacheService: cacheService,
-		tokenService: tokenService,
-		userService:  userService,
-		oAuthService: oAuthService,
+		config:          config,
+		cacheRepository: cacheRepository,
+		tokenRepository: tokenRepository,
+		userService:     userService,
+		oAuthService:    oAuthService,
 	}
 }
 
@@ -79,23 +82,25 @@ func (as *authService) SocialLogin(req *types.SocialLoginReq) (*types.LoginResp,
 }
 
 func (as *authService) Logout(user *types.LoggedInUser) error {
-	if err := as.tokenService.DeleteTokenUuid(config.Redis().AccessUuidPrefix+user.AccessUuid,
-		config.Redis().RefreshUuidPrefix+user.RefreshUuid); err != nil {
+	redisConf := as.config.Redis
+	if err := as.tokenRepository.DeleteTokenUuid(redisConf.AccessUuidPrefix+user.AccessUuid,
+		redisConf.RefreshUuidPrefix+user.RefreshUuid); err != nil {
 		return rest_errors.ErrLogOut
 	}
 	return nil
 }
 
 func (as *authService) CheckUserInCache(userId int, uuid, uuidType string) bool {
-	prefix := config.Redis().AccessUuidPrefix
+	redisConf := as.config.Redis
+	prefix := redisConf.AccessUuidPrefix
 
 	if uuidType == consts.RefreshTokenType {
-		prefix = config.Redis().RefreshUuidPrefix
+		prefix = redisConf.RefreshUuidPrefix
 	}
 
 	redisKey := prefix + uuid
 
-	redisUserId, err := as.cacheService.GetInt(redisKey)
+	redisUserId, err := as.cacheRepository.GetInt(redisKey)
 	if err != nil {
 		switch err {
 		case redis.Nil:
@@ -135,9 +140,10 @@ func (as *authService) RefreshToken(refreshToken string) (*types.LoginResp, erro
 		return nil, err
 	}
 
-	if err = as.tokenService.DeleteTokenUuid(
-		config.Redis().AccessUuidPrefix+oldToken.AccessUuid,
-		config.Redis().RefreshUuidPrefix+oldToken.RefreshUuid,
+	redisConf := as.config.Redis
+	if err = as.tokenRepository.DeleteTokenUuid(
+		redisConf.AccessUuidPrefix+oldToken.AccessUuid,
+		redisConf.RefreshUuidPrefix+oldToken.RefreshUuid,
 	); err != nil {
 		log.Error(err)
 		return nil, rest_errors.ErrDeletingOldJWTToken
@@ -177,12 +183,12 @@ func (as *authService) CreateToken(userId int) (*types.JwtToken, error) {
 	var token *types.JwtToken
 	var err error
 
-	if token, err = as.tokenService.CreateToken(userId); err != nil {
+	if token, err = as.tokenRepository.CreateToken(userId); err != nil {
 		log.Error(err)
 		return nil, rest_errors.ErrCreatingJWTToken
 	}
 
-	if err = as.tokenService.StoreTokenUuid(userId, token); err != nil {
+	if err = as.tokenRepository.StoreTokenUuid(userId, token); err != nil {
 		log.Error(err)
 		return nil, rest_errors.ErrStoringJWTToken
 	}
@@ -213,10 +219,11 @@ func (as *authService) ParseToken(token, tokenType string) (*types.JwtToken, err
 }
 
 func (as *authService) ParseTokenClaim(token, tokenType string) (jwt.MapClaims, error) {
-	secret := config.Jwt().AccessTokenSecret
+	jwtConf := as.config.Jwt
+	secret := jwtConf.AccessTokenSecret
 
 	if tokenType == consts.RefreshTokenType {
-		secret = config.Jwt().RefreshTokenSecret
+		secret = jwtConf.RefreshTokenSecret
 	}
 
 	parsedToken, err := methods.ParseJwtToken(token, secret)

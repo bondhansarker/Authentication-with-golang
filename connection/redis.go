@@ -8,14 +8,13 @@ import (
 
 var redisClient *redis.Client
 
-func Redis() {
-	conf := config.Redis()
-	log.Info("connecting to redis at ", conf.Host, ":", conf.Port, "...")
+func Redis(redisConfig *config.RedisConfig) {
+	log.Info("connecting to redis at ", redisConfig.Host, ":", redisConfig.Port, "...")
 
 	redisClient = redis.NewClient(&redis.Options{
-		Addr:     conf.Host + ":" + conf.Port,
-		Password: conf.Pass,
-		DB:       conf.Db,
+		Addr:     redisConfig.Host + ":" + redisConfig.Port,
+		Password: redisConfig.Pass,
+		DB:       redisConfig.Db,
 	})
 
 	if _, err := redisClient.Ping().Result(); err != nil {

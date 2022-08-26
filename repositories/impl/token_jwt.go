@@ -1,33 +1,34 @@
-package serviceImpl
+package impl
 
 import (
 	"time"
 
-	"auth/rest_errors"
-	"auth/services"
-
 	"auth/config"
+	"auth/repositories"
+	"auth/rest_errors"
 	"auth/types"
 	"auth/utils/log"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 )
 
-type jwtService struct {
-	cacheService services.ICache
+type jwtRepository struct {
+	cacheRepository repositories.ICache
+	config          *config.Config
 }
 
-func NewJWTService(cacheService services.ICache) services.IToken {
-	return &jwtService{
-		cacheService: cacheService,
+func NewJWTRepository(config *config.Config, cacheRepository repositories.ICache) repositories.IToken {
+	return &jwtRepository{
+		config:          config,
+		cacheRepository: cacheRepository,
 	}
 }
 
-func (jts *jwtService) CreateToken(userId int) (*types.JwtToken, error) {
+func (jtr *jwtRepository) CreateToken(userId int) (*types.JwtToken, error) {
 	token := &types.JwtToken{}
-	jwtConf := config.Jwt()
+	jwtConf := jtr.config.Jwt
 	token.UserID = userId
-	token.AccessExpiry = time.Now().Add(time.Second * config.Jwt().AccessTokenExpiry).Unix()
+	token.AccessExpiry = time.Now().Add(time.Second * jwtConf.AccessTokenExpiry).Unix()
 	token.AccessUuid = uuid.New().String()
 
 	token.RefreshExpiry = time.Now().Add(time.Second * jwtConf.RefreshTokenExpiry).Unix()
@@ -64,10 +65,10 @@ func (jts *jwtService) CreateToken(userId int) (*types.JwtToken, error) {
 	return token, nil
 }
 
-func (jts *jwtService) StoreTokenUuid(userId int, token *types.JwtToken) error {
+func (jtr *jwtRepository) StoreTokenUuid(userId int, token *types.JwtToken) error {
 	now := time.Now().Unix()
-	redisConf := config.Redis()
-	err := jts.cacheService.Set(
+	redisConf := jtr.config.Redis
+	err := jtr.cacheRepository.Set(
 		redisConf.AccessUuidPrefix+token.AccessUuid,
 		userId, time.Duration(token.AccessExpiry-now),
 	)
@@ -75,7 +76,7 @@ func (jts *jwtService) StoreTokenUuid(userId int, token *types.JwtToken) error {
 		return err
 	}
 
-	err = jts.cacheService.Set(
+	err = jtr.cacheRepository.Set(
 		redisConf.RefreshUuidPrefix+token.RefreshUuid,
 		userId, time.Duration(token.RefreshExpiry-now),
 	)
@@ -86,6 +87,6 @@ func (jts *jwtService) StoreTokenUuid(userId int, token *types.JwtToken) error {
 	return nil
 }
 
-func (jts *jwtService) DeleteTokenUuid(uuid ...string) error {
-	return jts.cacheService.Del(uuid...)
+func (jtr *jwtRepository) DeleteTokenUuid(uuid ...string) error {
+	return jtr.cacheRepository.Del(uuid...)
 }

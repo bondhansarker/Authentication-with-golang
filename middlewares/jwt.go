@@ -7,9 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"auth/services"
-
-	conf "auth/config"
+	"auth/config"
+	"auth/repositories"
 	"auth/types"
 	"auth/utils/log"
 	"auth/utils/methods"
@@ -18,12 +17,14 @@ import (
 )
 
 type JWTMiddleware struct {
-	cacheService services.ICache
+	redisConfig     *config.RedisConfig
+	cacheRepository repositories.ICache
 }
 
-func NewJWTMiddleWare(cacheService services.ICache) *JWTMiddleware {
+func NewJWTMiddleWare(redisConfig *config.RedisConfig, cacheRepository repositories.ICache) *JWTMiddleware {
 	return &JWTMiddleware{
-		cacheService: cacheService,
+		redisConfig:     redisConfig,
+		cacheRepository: cacheRepository,
 	}
 }
 
@@ -239,16 +240,16 @@ func (jmr *JWTMiddleware) JWTWithConfig(config JWTConfig) echo.MiddlewareFunc {
 				return ErrJWTMissing
 			}
 
-			redisConfig := conf.Redis()
+			redisConfig := jmr.redisConfig
 			// Check if access_uuid corresponds to user_id in Redis
-			redisUserId, err := jmr.cacheService.GetInt(redisConfig.AccessUuidPrefix + tokenDetails.AccessUuid)
+			redisUserId, err := jmr.cacheRepository.GetInt(redisConfig.AccessUuidPrefix + tokenDetails.AccessUuid)
 			if err != nil || redisUserId != tokenDetails.UserID {
 				log.Error("rest_errors: ", err, " | redis user: ", redisUserId, " | token user: ", tokenDetails.UserID)
 				return ErrJWTMissing
 			}
 
 			user := &types.UserResp{}
-			if err := jmr.cacheService.GetStruct(redisConfig.UserPrefix+strconv.Itoa(tokenDetails.UserID), &user); err != nil {
+			if err := jmr.cacheRepository.GetStruct(redisConfig.UserPrefix+strconv.Itoa(tokenDetails.UserID), &user); err != nil {
 				log.Error(err)
 				return ErrJWTMissing
 			}

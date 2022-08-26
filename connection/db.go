@@ -17,14 +17,13 @@ var (
 	err error
 )
 
-func Db() {
-	conf := config.Db()
+func Db(dbConfig *config.DbConfig) {
 	logMode := logger.Silent
-	if conf.Debug {
+	if dbConfig.Debug {
 		logMode = logger.Info
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", conf.User, conf.Pass, conf.Host, conf.Port, conf.Schema)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbConfig.User, dbConfig.Pass, dbConfig.Host, dbConfig.Port, dbConfig.Schema)
 
 	dB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		PrepareStmt: true,
@@ -39,19 +38,19 @@ func Db() {
 		panic(err)
 	}
 
-	if conf.MaxIdleConn != 0 {
-		sqlDb.SetMaxIdleConns(conf.MaxIdleConn)
+	if dbConfig.MaxIdleConn != 0 {
+		sqlDb.SetMaxIdleConns(dbConfig.MaxIdleConn)
 	}
-	if conf.MaxOpenConn != 0 {
-		sqlDb.SetMaxOpenConns(conf.MaxOpenConn)
+	if dbConfig.MaxOpenConn != 0 {
+		sqlDb.SetMaxOpenConns(dbConfig.MaxOpenConn)
 	}
-	if conf.MaxConnLifetime != 0 {
-		sqlDb.SetConnMaxLifetime(conf.MaxConnLifetime * time.Second)
+	if dbConfig.MaxConnLifetime != 0 {
+		sqlDb.SetConnMaxLifetime(dbConfig.MaxConnLifetime * time.Second)
 	}
 
-	//dB.AutoMigrate(
+	// dB.AutoMigrate(
 	//	&models.User{},
-	//)
+	// )
 	log.Info("mysql connection successful...")
 }
 

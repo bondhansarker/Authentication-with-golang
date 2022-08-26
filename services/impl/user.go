@@ -21,15 +21,17 @@ import (
 )
 
 type userService struct {
-	cacheService   services.ICache
-	userRepository repositories.IUserRepository
+	config          *config.Config
+	cacheRepository repositories.ICache
+	userRepository  repositories.IUserRepository
 }
 
-func NewUserService(cacheService services.ICache,
+func NewUserService(config *config.Config, cacheRepository repositories.ICache,
 	userRepository repositories.IUserRepository) services.IUserService {
 	return &userService{
-		cacheService:   cacheService,
-		userRepository: userRepository,
+		config:          config,
+		cacheRepository: cacheRepository,
+		userRepository:  userRepository,
 	}
 }
 
@@ -130,8 +132,8 @@ func (us *userService) UpdateUserCache(userId int) (*types.UserResp, error) {
 		return nil, err
 	}
 
-	redisConf := config.Redis()
-	if err := us.cacheService.SetStruct(redisConf.UserPrefix+strconv.Itoa(userResp.ID), userResp, redisConf.UserTtl); err != nil {
+	redisConf := us.config.Redis
+	if err := us.cacheRepository.SetStruct(redisConf.UserPrefix+strconv.Itoa(userResp.ID), userResp, redisConf.UserTtl); err != nil {
 		log.Error(err)
 		return nil, rest_errors.ErrUpdatingCacheUser
 	}
@@ -171,7 +173,7 @@ func (us *userService) GetUserFromCache(userId int, checkInCache bool) (*types.U
 	var err error
 
 	if checkInCache {
-		if err = us.cacheService.GetStruct(config.Redis().UserPrefix+strconv.Itoa(userId), &userResp); err == nil {
+		if err = us.cacheRepository.GetStruct(us.config.Redis.UserPrefix+strconv.Itoa(userId), &userResp); err == nil {
 			log.Info("Token user served from cache")
 			return userResp, nil
 		}
@@ -223,7 +225,7 @@ func (us *userService) ChangePassword(userId int, req *types.ChangePasswordReq) 
 
 	if err := us.userRepository.UpdateByInterface(userId, data); err != nil {
 		log.Error(err)
-		return rest_errors.ErrUpdatingUserPassword
+		return rest_errors.ErrUpdatingPassword
 	}
 	return nil
 }
@@ -318,17 +320,17 @@ func (us *userService) ResetPassword(req *types.ResetPasswordReq) error {
 	}
 	if err := us.userRepository.UpdateByInterface(req.ID, data); err != nil {
 		log.Error(err)
-		return rest_errors.ErrResettingUserPassword
+		return rest_errors.ErrResettingPassword
 	}
 
 	return nil
 }
 
 func (us *userService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPasswordOtpResp, error) {
-	redisConf := config.Redis()
+	redisConf := us.config.Redis
 	nonceKey := redisConf.OtpNoncePrefix + consts.UserForgotPasswordOtp + nonce
 
-	userId, err := us.cacheService.GetInt(nonceKey)
+	userId, err := us.cacheRepository.GetInt(nonceKey)
 	if err != nil {
 		log.Error(err)
 		return nil, rest_errors.InvalidOTPNonce
@@ -344,7 +346,7 @@ func (us *userService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPassw
 	}
 
 	// delete current otp and nonce key
-	_ = us.cacheService.Del(nonceKey, otpKey)
+	_ = us.cacheRepository.Del(nonceKey, otpKey)
 
 	resp, err := us.CreateForgotPasswordOtp(userId, userDetail.Email)
 	if err != nil {
@@ -356,7 +358,7 @@ func (us *userService) ResendForgotPasswordOtp(nonce string) (*types.ForgotPassw
 }
 
 func (us *userService) CreateForgotPasswordOtp(userId int, email string) (*types.ForgotPasswordOtpResp, error) {
-	redisConf := config.Redis()
+	redisConf := us.config.Redis
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
 
 	nonce := uuid.New().String()
@@ -368,13 +370,13 @@ func (us *userService) CreateForgotPasswordOtp(userId int, email string) (*types
 	}
 
 	// NOTE: "nonce" key will be deleted upon otp verification or resend otp
-	if err := us.cacheService.Set(redisConf.OtpNoncePrefix+consts.UserForgotPasswordOtp+nonce, userId, redisConf.OtpNonceTtl); err != nil {
+	if err := us.cacheRepository.Set(redisConf.OtpNoncePrefix+consts.UserForgotPasswordOtp+nonce, userId, redisConf.OtpNonceTtl); err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
 	// NOTE: "otp" key will be deleted upon otp verification
-	if err := us.cacheService.Set(otpKey, otp, redisConf.OtpTtl); err != nil {
+	if err := us.cacheRepository.Set(otpKey, otp, redisConf.OtpTtl); err != nil {
 		log.Error(err)
 		return nil, err
 	}
@@ -383,23 +385,23 @@ func (us *userService) CreateForgotPasswordOtp(userId int, email string) (*types
 }
 
 func (us *userService) VerifyForgotPasswordOtp(data *types.ForgotPasswordOtpReq) (bool, error) {
-	redisConf := config.Redis()
+	redisConf := us.config.Redis
 
 	nonceKey := redisConf.OtpNoncePrefix + consts.UserForgotPasswordOtp + data.Nonce
-	userId, err := us.cacheService.GetInt(nonceKey)
+	userId, err := us.cacheRepository.GetInt(nonceKey)
 	if err != nil {
 		log.Error(err)
 		return false, rest_errors.InvalidOTPNonce
 	}
 
 	otpKey := redisConf.OtpPrefix + consts.UserForgotPasswordOtp + strconv.Itoa(userId)
-	otp, err := us.cacheService.Get(otpKey)
+	otp, err := us.cacheRepository.Get(otpKey)
 	if err != nil || otp != data.Otp {
 		log.Error(err)
 		return false, rest_errors.InvalidOTPNonce
 	}
 
-	if err = us.cacheService.Del(nonceKey, otpKey); err != nil {
+	if err = us.cacheRepository.Del(nonceKey, otpKey); err != nil {
 		log.Error(err)
 	}
 
